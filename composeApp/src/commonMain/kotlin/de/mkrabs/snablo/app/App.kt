@@ -1,49 +1,95 @@
 package de.mkrabs.snablo.app
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-import app.composeapp.generated.resources.Res
-import app.composeapp.generated.resources.compose_multiplatform
+import de.mkrabs.snablo.app.data.api.HttpClientFactory
+import de.mkrabs.snablo.app.data.api.PocketBaseClient
+import de.mkrabs.snablo.app.data.repository.*
+import de.mkrabs.snablo.app.data.session.InMemorySessionManager
+import de.mkrabs.snablo.app.presentation.ui.LoginScreen
+import de.mkrabs.snablo.app.presentation.ui.SplashScreen
+import de.mkrabs.snablo.app.presentation.viewmodel.AuthViewModel
 
+enum class AppScreen {
+    SPLASH,
+    LOGIN,
+    HOME,
+    SHELF,
+    PURCHASE,
+    HISTORY,
+    ADMIN
+}
+
+/**
+ * Main application entry point
+ */
 @Composable
 @Preview
 fun App() {
+    // Initialize dependencies
+    val httpClient = HttpClientFactory.createHttpClient()
+    val sessionManager = InMemorySessionManager()
+    val apiClient = PocketBaseClient(httpClient, sessionManager)
+
+    // Repositories
+    val authRepository = AuthRepositoryImpl(apiClient)
+    val catalogRepository = CatalogRepositoryImpl(apiClient)
+    val shelfRepository = ShelfRepositoryImpl(apiClient)
+    val ledgerRepository = LedgerRepositoryImpl(apiClient)
+    val reconciliationRepository = ReconciliationRepositoryImpl(apiClient)
+
+    // Services
+    val authService = de.mkrabs.snablo.app.data.auth.AuthService(authRepository, sessionManager, apiClient)
+
+    // ViewModels
+    val authViewModel = AuthViewModel(authService)
+
+    // Navigation state
+    var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
+
     MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
+        Surface(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxSize()
+                .safeContentPadding(),
+            color = MaterialTheme.colorScheme.background
         ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+            when (currentScreen) {
+                AppScreen.SPLASH -> SplashScreen(
+                    viewModel = authViewModel,
+                    onNavigateToHome = { currentScreen = AppScreen.HOME },
+                    onNavigateToLogin = { currentScreen = AppScreen.LOGIN }
+                )
+                AppScreen.LOGIN -> LoginScreen(
+                    viewModel = authViewModel,
+                    onLoginSuccess = { currentScreen = AppScreen.HOME }
+                )
+                AppScreen.HOME -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text("Home Screen - Snablo")
+                        // TODO: Implement home screen with navigation
+                    }
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text("Screen: $currentScreen")
+                    }
                 }
             }
         }
     }
 }
+
+
