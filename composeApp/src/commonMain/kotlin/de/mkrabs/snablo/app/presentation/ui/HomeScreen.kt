@@ -17,8 +17,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.mkrabs.snablo.app.presentation.ui.home.BalanceHeaderCard
+import de.mkrabs.snablo.app.presentation.ui.home.CornersSection
 import de.mkrabs.snablo.app.presentation.ui.home.HomeSideDrawer
-import de.mkrabs.snablo.app.presentation.ui.home.LocationShelfCard
 import de.mkrabs.snablo.app.presentation.ui.home.RecentTransactionsHeader
 import de.mkrabs.snablo.app.presentation.ui.home.RightEdgeDrawerAffordance
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
@@ -38,7 +38,6 @@ fun HomeScreen(
     onOpenProfile: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val shelfState by shelfViewModel.uiState.collectAsState()
 
     // load initial data
     LaunchedEffect(userId) {
@@ -70,17 +69,10 @@ fun HomeScreen(
                 }
 
                 item {
-                    LocationShelfCard(
-                        locations = shelfState.locations,
-                        selectedLocation = shelfState.selectedLocation,
-                        slots = uiState.slots,
-                        onLocationSelected = { loc ->
-                            shelfViewModel.selectLocation(loc)
-                            viewModel.selectLocation(loc.id)
-                        },
-                        onSlotClick = { slotId ->
-                            onSlotClick(shelfState.selectedLocation?.id ?: "", slotId)
-                        }
+                    // New: locations/corners section (empty/one/many carousel)
+                    CornersSection(
+                        corners = uiState.corners,
+                        onShelfClick = onSlotClick
                     )
                 }
 

@@ -54,7 +54,7 @@ fun App() {
 
     // ViewModels
     val authViewModel = AuthViewModel(authService)
-    val homeViewModel = HomeViewModel(ledgerRepository, shelfRepository)
+    val homeViewModel = HomeViewModel(ledgerRepository, shelfRepository, catalogRepository)
     val shelfViewModel = ShelfViewModel(catalogRepository, shelfRepository)
 
     // Navigation state
