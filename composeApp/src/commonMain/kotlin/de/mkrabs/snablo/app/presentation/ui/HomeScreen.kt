@@ -1,14 +1,26 @@
 package de.mkrabs.snablo.app.presentation.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.mkrabs.snablo.app.presentation.ui.home.BalanceHeaderCard
+import de.mkrabs.snablo.app.presentation.ui.home.HomeSideDrawer
+import de.mkrabs.snablo.app.presentation.ui.home.LocationShelfCard
+import de.mkrabs.snablo.app.presentation.ui.home.RecentTransactionsHeader
+import de.mkrabs.snablo.app.presentation.ui.home.RightEdgeDrawerAffordance
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
 
@@ -35,169 +47,57 @@ fun HomeScreen(
         }
     }
 
-    // Drawer state for right-to-left drawer
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
-    // Location dropdown state
-    var expanded by remember { mutableStateOf(false) }
-    var selectedLocationName by remember { mutableStateOf(shelfState.selectedLocation?.name ?: "Select location") }
-
-    ModalNavigationDrawer(
+    HomeSideDrawer(
         drawerState = drawerState,
-        drawerContent = {
-            // We'll place the drawer on the end (right side) using ModalNavigationDrawer defaults
-            ModalDrawerSheet(
-                modifier = Modifier.fillMaxHeight().width(280.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                // bottom items as requested (icons not required now)
-                NavigationDrawerItem(
-                    label = { Text("Profile") },
-                    selected = false,
-                    onClick = { onProfile() }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Settings") },
-                    selected = false,
-                    onClick = { onOpenSettings() }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Send feedback") },
-                    selected = false,
-                    onClick = { onSendFeedback() }
-                )
-            }
-        }
+        onProfile = onProfile,
+        onOpenSettings = onOpenSettings,
+        onSendFeedback = onSendFeedback
     ) {
-        // Main scrollable body
         Box(modifier = Modifier.fillMaxSize()) {
-            // Using LazyColumn for scrollable content
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
                 item {
-                    // Balance card with top-up action and profile shortcut
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("Balance", style = MaterialTheme.typography.labelMedium)
-                                Text("€${String.format("%.2f", uiState.balance)}", style = MaterialTheme.typography.displaySmall)
-                            }
-
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                IconButton(onClick = onTopUp) {
-                                    // Use text placeholder for icon to avoid icon dependency
-                                    Text("+")
-                                }
-                                IconButton(onClick = onProfile) {
-                                    Text("👤")
-                                }
-                            }
-                        }
-                    }
+                    BalanceHeaderCard(
+                        balance = uiState.balance,
+                        onTopUp = onTopUp,
+                        onProfile = onProfile
+                    )
                 }
 
                 item {
-                    // Location + shelf overview combined
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            // Location header with dropdown placeholder
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Current Location", style = MaterialTheme.typography.titleMedium)
-
-                                // Exposed dropdown for locations
-                                ExposedDropdownMenuBox(
-                                    expanded = expanded,
-                                    onExpandedChange = { expanded = !expanded }
-                                ) {
-                                    TextField(
-                                        value = selectedLocationName,
-                                        onValueChange = { },
-                                        readOnly = true,
-                                        label = { Text("Location") },
-                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                                        modifier = Modifier.width(200.dp)
-                                    )
-                                    ExposedDropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false }
-                                    ) {
-                                        shelfState.locations.forEach { loc ->
-                                            DropdownMenuItem(
-                                                text = { Text(loc.name) },
-                                                onClick = {
-                                                    selectedLocationName = loc.name
-                                                    expanded = false
-                                                    shelfViewModel.selectLocation(loc)
-                                                    viewModel.selectLocation(loc.id)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Shelf grid simplified as column of slot cards (clickable)
-                            Column {
-                                uiState.slots.take(6).forEach { slot ->
-                                    ShelfSlotCard(
-                                        item = slot.catalogItemId,
-                                        stockState = slot.stockState,
-                                        onClick = { onSlotClick(shelfState.selectedLocation?.id ?: "", slot.id) }
-                                    )
-                                }
-                            }
+                    LocationShelfCard(
+                        locations = shelfState.locations,
+                        selectedLocation = shelfState.selectedLocation,
+                        slots = uiState.slots,
+                        onLocationSelected = { loc ->
+                            shelfViewModel.selectLocation(loc)
+                            viewModel.selectLocation(loc.id)
+                        },
+                        onSlotClick = { slotId ->
+                            onSlotClick(shelfState.selectedLocation?.id ?: "", slotId)
                         }
-                    }
+                    )
                 }
 
                 item {
-                    Text("Recent transactions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+                    RecentTransactionsHeader()
                 }
 
                 items(uiState.recentTransactions) { entry ->
                     TransactionCard(entry)
                 }
 
-                // spacer at bottom to allow additional scroll past content (overscroll to 50% screen)
-                item {
-                    Spacer(modifier = Modifier.height(300.dp))
-                }
+                // spacer at bottom to allow additional scroll past content (approx. 50% screen)
+                item { Spacer(modifier = Modifier.height(300.dp)) }
             }
 
-            // Overlay gesture or small affordance to open drawer (swipe from right)
-            // For simplicity, add a small draggable area on the right edge
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .width(20.dp)
-                    .fillMaxHeight()
-                    .background(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.01f))
-            ) {
-                // TODO: Hook swipe gestures to open drawer; platform specifics may be required
-            }
+            // right-edge affordance for swipe-to-open (gesture wiring TODO)
+            RightEdgeDrawerAffordance()
         }
     }
 }
