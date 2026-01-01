@@ -16,7 +16,10 @@ import de.mkrabs.snablo.app.data.repository.*
 import de.mkrabs.snablo.app.data.session.InMemorySessionManager
 import de.mkrabs.snablo.app.presentation.ui.LoginScreen
 import de.mkrabs.snablo.app.presentation.ui.SplashScreen
+import de.mkrabs.snablo.app.presentation.ui.HomeScreen
 import de.mkrabs.snablo.app.presentation.viewmodel.AuthViewModel
+import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
+import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
 
 enum class AppScreen {
     SPLASH,
@@ -51,6 +54,8 @@ fun App() {
 
     // ViewModels
     val authViewModel = AuthViewModel(authService)
+    val homeViewModel = HomeViewModel(ledgerRepository, shelfRepository)
+    val shelfViewModel = ShelfViewModel(catalogRepository, shelfRepository)
 
     // Navigation state
     var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
@@ -73,12 +78,17 @@ fun App() {
                     onLoginSuccess = { currentScreen = AppScreen.HOME }
                 )
                 AppScreen.HOME -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text("Home Screen - Snablo")
-                        // TODO: Implement home screen with navigation
-                    }
+                    HomeScreen(
+                        viewModel = homeViewModel,
+                        shelfViewModel = shelfViewModel,
+                        userId = "", // TODO: populate with real user id from authService/session
+                        onTopUp = { /* TODO: navigate to TopUp */ },
+                        onProfile = { /* TODO: open profile */ },
+                        onSlotClick = { locationId, slotId -> /* TODO: open purchase */ },
+                        onOpenSettings = { /* TODO: open settings */ },
+                        onSendFeedback = { /* TODO: send feedback */ },
+                        onOpenProfile = { /* TODO: open profile */ }
+                    )
                 }
                 else -> {
                     Column(
@@ -91,5 +101,3 @@ fun App() {
         }
     }
 }
-
-
