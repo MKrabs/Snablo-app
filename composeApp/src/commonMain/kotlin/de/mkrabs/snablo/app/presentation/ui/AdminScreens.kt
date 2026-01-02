@@ -13,6 +13,7 @@ import de.mkrabs.snablo.app.domain.model.CashCount
 import de.mkrabs.snablo.app.domain.model.DriftClassification
 import de.mkrabs.snablo.app.domain.model.Location
 import de.mkrabs.snablo.app.presentation.viewmodel.ReconciliationViewModel
+import de.mkrabs.snablo.app.util.formatPriceEu
 
 @Composable
 fun CashCountScreen(
@@ -113,7 +114,7 @@ fun CashCountScreen(
                             .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Expected: €${String.format("%.2f", last.expectedCash)}")
+                        Text("Expected: ${formatPriceEu(last.expectedCash)}")
                         Text("Drift: ${String.format("%.1f", last.driftPercentage)}%")
                     }
                 }
@@ -266,21 +267,21 @@ fun CashCountCard(cashCount: CashCount) {
                 Column {
                     Text("Counted", style = MaterialTheme.typography.labelSmall)
                     Text(
-                        "€${String.format("%.2f", cashCount.countedCash)}",
+                        "${formatPriceEu(cashCount.countedCash)}",
                         style = MaterialTheme.typography.titleSmall
                     )
                 }
                 Column {
                     Text("Expected", style = MaterialTheme.typography.labelSmall)
                     Text(
-                        "€${String.format("%.2f", cashCount.expectedCash)}",
+                        "${formatPriceEu(cashCount.expectedCash)}",
                         style = MaterialTheme.typography.titleSmall
                     )
                 }
                 Column {
                     Text("Drift", style = MaterialTheme.typography.labelSmall)
                     Text(
-                        "${if (cashCount.drift > 0) "+" else ""}€${String.format("%.2f", cashCount.drift)}",
+                        "${if (cashCount.drift > 0) "+" else ""}${formatPriceEu(cashCount.drift)}",
                         style = MaterialTheme.typography.titleSmall,
                         color = if (cashCount.drift == 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )

@@ -2,15 +2,7 @@ package de.mkrabs.snablo.app.presentation.ui.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,10 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.filter
-
-// Use the ViewModel types directly so callers don't need to convert between
-// packages; HomeViewModel provides CornerUi and CornerShelfSlotUi.
 import de.mkrabs.snablo.app.presentation.viewmodel.CornerUi
+import de.mkrabs.snablo.app.util.formatPriceEu
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -42,43 +32,49 @@ fun CornersSection(
     onShelfClick: (locationId: String, slotId: String) -> Unit,
     locationsDebugText: String?
 ) {
-    when {
-        corners.isEmpty() -> EmptyCornersState()
-        corners.size == 1 -> {
-            // Show single corner full width with a responsive grid of shelves
-            CornerCardFull(corner = corners.first(), onShelfClick = onShelfClick)
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Locations", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.weight(1f))
         }
-        else -> {
-            // Manual snapping implementation (works across Compose versions)
-            val rowState = rememberLazyListState()
 
-            // When scrolling stops, snap to nearest item with a spring animation
-            LaunchedEffect(rowState) {
-                snapshotFlow { rowState.isScrollInProgress }
-                    .filter { inProgress -> !inProgress }
-                    .collect {
-                        // compute nearest item
-                        val firstVisible = rowState.firstVisibleItemIndex
-                        val visibleOffset = rowState.firstVisibleItemScrollOffset
-                        // assume item width ~ 320.dp -> convert to px using density if needed; use heuristic
-                        // Here we decide: if more than half scrolled to next, move to next
-                        val target = if (visibleOffset > 160) firstVisible + 1 else firstVisible
-                        // animateScrollToItem doesn't accept animationSpec on this compose version; use default animation
-                        rowState.animateScrollToItem(target)
-                    }
+        if (!locationsDebugText.isNullOrBlank()) {
+            Text(
+                text = locationsDebugText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
+
+        when {
+            corners.isEmpty() -> {
+                EmptyCornersState()
             }
-
-            LazyRow(
-                state = rowState,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
-            ) {
-                items(corners, key = { it.location.id }) { corner ->
-                    CornerCard(
-                        corner = corner,
-                        modifier = Modifier.width(320.dp),
-                        onShelfClick = onShelfClick
-                    )
+            corners.size == 1 -> {
+                CornerCard(
+                    corner = corners.first(),
+                    modifier = Modifier.fillMaxWidth(),
+                    onShelfClick = onShelfClick
+                )
+            }
+            else -> {
+                LazyRow(
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(corners) { corner ->
+                        CornerCard(
+                            corner = corner,
+                            modifier = Modifier.width(280.dp),
+                            onShelfClick = onShelfClick
+                        )
+                    }
                 }
             }
         }
@@ -154,7 +150,7 @@ fun SnackCard(name: String, price: Double?, imageUrl: String?, inventoryCount: I
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = "${inventoryCount} left", style = MaterialTheme.typography.labelSmall)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = price?.let { "€${String.format("%.2f", it)}" } ?: "—", style = MaterialTheme.typography.labelSmall)
+            Text(text = formatPriceEu(price), style = MaterialTheme.typography.labelSmall)
         }
     }
 }

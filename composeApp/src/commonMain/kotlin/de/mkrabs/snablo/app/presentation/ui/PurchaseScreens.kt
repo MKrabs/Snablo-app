@@ -12,6 +12,7 @@ import de.mkrabs.snablo.app.domain.model.LedgerEntry
 import de.mkrabs.snablo.app.domain.model.TransactionKind
 import de.mkrabs.snablo.app.presentation.viewmodel.BalanceViewModel
 import de.mkrabs.snablo.app.presentation.viewmodel.ConfirmPurchaseViewModel
+import de.mkrabs.snablo.app.util.formatPriceEu
 
 @Composable
 fun ConfirmPurchaseScreen(
@@ -76,14 +77,14 @@ fun ConfirmPurchaseScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Price:")
-                        Text("€${String.format("%.2f", data.effectivePrice)}")
+                        Text(formatPriceEu(data.effectivePrice))
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Your Balance:")
-                        Text("€${String.format("%.2f", data.userBalance)}")
+                        Text(formatPriceEu(data.userBalance))
                     }
                 }
             }
@@ -197,7 +198,7 @@ fun HistoryScreen(
                     style = MaterialTheme.typography.labelMedium
                 )
                 Text(
-                    "€${String.format("%.2f", uiState.balance)}",
+                    formatPriceEu(uiState.balance),
                     style = MaterialTheme.typography.displaySmall,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -274,11 +275,10 @@ fun TransactionCard(entry: LedgerEntry) {
                 )
             }
             Text(
-                "${if (entry.amount > 0) "+" else ""}€${String.format("%.2f", entry.amount)}",
+                "${if (entry.amount > 0) "+" else ""}${formatPriceEu(entry.amount)}",
                 style = MaterialTheme.typography.titleSmall,
                 color = if (entry.amount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         }
     }
 }
-

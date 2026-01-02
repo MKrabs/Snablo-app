@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.mkrabs.snablo.app.util.formatPriceEu
 
 @Composable
 fun BalanceHeaderCard(
@@ -35,7 +36,7 @@ fun BalanceHeaderCard(
             Column {
                 Text("Balance", style = MaterialTheme.typography.labelMedium)
                 Text(
-                    "€${String.format("%.2f", balance)}",
+                    formatPriceEu(balance),
                     style = MaterialTheme.typography.displaySmall
                 )
             }
@@ -52,4 +53,3 @@ fun BalanceHeaderCard(
         }
     }
 }
-

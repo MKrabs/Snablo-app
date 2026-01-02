@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import de.mkrabs.snablo.app.domain.model.Location
 import de.mkrabs.snablo.app.domain.model.StockState
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
+import de.mkrabs.snablo.app.util.formatPriceEu
 
 @Composable
 fun LocationListScreen(
@@ -168,7 +169,7 @@ fun ShelfSlotCard(
                     Text("$inventoryCount left", style = MaterialTheme.typography.labelSmall)
                 }
                 if (price != null) {
-                    Text("${String.format("%.2f", price)}€", style = MaterialTheme.typography.labelSmall)
+                    Text(formatPriceEu(price), style = MaterialTheme.typography.labelSmall)
                 }
             }
 
