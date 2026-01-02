@@ -94,26 +94,7 @@ fun HomeScreen(
                 items(uiState.recentTransactions) { entry ->
                     TransactionCard(entry)
                 }
-
-                // spacer at bottom to allow additional scroll past content (approx. 50% screen)
-                item {
-                    LongDummyContent()
-                }
             }
-        }
-    }
-}
-
-@Composable
-private fun LongDummyContent() {
-    // Produces a lot of text lines to force a scrollable page for debugging
-    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(top = 16.dp)) {
-        for (i in 1..100) {
-            androidx.compose.material3.Text(
-                text = "Dummy content line #$i",
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
         }
     }
 }
