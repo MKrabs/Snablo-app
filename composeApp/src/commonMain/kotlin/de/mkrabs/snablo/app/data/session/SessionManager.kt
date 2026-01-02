@@ -58,8 +58,5 @@ class InMemorySessionManager : SessionManager {
 
 /**
  * Default SessionManager used by the app.
- *
- * Note: this keeps the user logged in for the lifetime of the running app.
- * For true persistence across app restarts, add a platform-specific implementation.
  */
-fun defaultSessionManager(): SessionManager = InMemorySessionManager()
+fun defaultSessionManager(): SessionManager = platformSessionManager()

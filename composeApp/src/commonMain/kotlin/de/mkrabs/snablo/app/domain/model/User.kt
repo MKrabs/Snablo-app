@@ -21,13 +21,14 @@ data class User(
 /**
  * Session token holder for authentication
  */
+@Serializable
 data class AuthToken(
     val token: String,
     val expiresAt: Long  // Milliseconds since epoch
 )
 
+@Serializable
 data class Session(
     val user: User,
     val token: AuthToken
 )
-
