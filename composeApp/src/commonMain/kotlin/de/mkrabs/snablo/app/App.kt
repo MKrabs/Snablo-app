@@ -7,13 +7,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 import de.mkrabs.snablo.app.data.api.HttpClientFactory
 import de.mkrabs.snablo.app.data.api.PocketBaseClient
 import de.mkrabs.snablo.app.data.repository.*
-import de.mkrabs.snablo.app.data.session.InMemorySessionManager
+import de.mkrabs.snablo.app.data.session.defaultSessionManager
 import de.mkrabs.snablo.app.presentation.ui.LoginScreen
 import de.mkrabs.snablo.app.presentation.ui.SplashScreen
 import de.mkrabs.snablo.app.presentation.ui.HomeScreen
@@ -37,28 +38,46 @@ enum class AppScreen {
 @Composable
 @Preview
 fun App() {
-    // Initialize dependencies
-    val httpClient = HttpClientFactory.createHttpClient()
-    val sessionManager = InMemorySessionManager()
-    val apiClient = PocketBaseClient(httpClient, sessionManager)
+    // Create & keep dependencies stable across recomposition (including desktop resize).
+    val httpClient = remember { HttpClientFactory.createHttpClient() }
+    val sessionManager = remember { defaultSessionManager() }
+    val apiClient = remember { PocketBaseClient(httpClient, sessionManager) }
 
-    // Repositories
-    val authRepository = AuthRepositoryImpl(apiClient)
-    val catalogRepository = CatalogRepositoryImpl(apiClient)
-    val shelfRepository = ShelfRepositoryImpl(apiClient)
-    val ledgerRepository = LedgerRepositoryImpl(apiClient)
-    val reconciliationRepository = ReconciliationRepositoryImpl(apiClient)
+    // Repositories (stable)
+    val authRepository = remember { AuthRepositoryImpl(apiClient) }
+    val catalogRepository = remember { CatalogRepositoryImpl(apiClient) }
+    val shelfRepository = remember { ShelfRepositoryImpl(apiClient) }
+    val ledgerRepository = remember { LedgerRepositoryImpl(apiClient) }
+    @Suppress("UNUSED_VARIABLE")
+    val reconciliationRepository = remember { ReconciliationRepositoryImpl(apiClient) }
 
-    // Services
-    val authService = de.mkrabs.snablo.app.data.auth.AuthService(authRepository, sessionManager, apiClient)
+    // Services (stable)
+    val authService = remember { de.mkrabs.snablo.app.data.auth.AuthService(authRepository, sessionManager, apiClient) }
 
-    // ViewModels
-    val authViewModel = AuthViewModel(authService)
-    val homeViewModel = HomeViewModel(ledgerRepository, shelfRepository, catalogRepository)
-    val shelfViewModel = ShelfViewModel(catalogRepository, shelfRepository)
+    // ViewModels (stable for the life of this composition)
+    val authViewModel = remember { AuthViewModel(authService) }
+    val homeViewModel = remember { HomeViewModel(ledgerRepository, shelfRepository, catalogRepository) }
+    val shelfViewModel = remember { ShelfViewModel(catalogRepository, shelfRepository) }
 
-    // Navigation state
-    var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
+    // Navigation state: saveable so it survives configuration changes / window recreation where supported.
+    var currentScreen by rememberSaveable { mutableStateOf(AppScreen.SPLASH) }
+
+    // Drive navigation from auth state, but don't reset user-driven navigation unnecessarily.
+    val authState by authViewModel.uiState.collectAsState()
+    LaunchedEffect(authState.isLoading, authState.isAuthenticated) {
+        // Only auto-navigate while we're on SPLASH or LOGIN.
+        if (!authState.isLoading) {
+            if (authState.isAuthenticated) {
+                if (currentScreen == AppScreen.SPLASH || currentScreen == AppScreen.LOGIN) {
+                    currentScreen = AppScreen.HOME
+                }
+            } else {
+                if (currentScreen == AppScreen.SPLASH) {
+                    currentScreen = AppScreen.LOGIN
+                }
+            }
+        }
+    }
 
     MaterialTheme {
         Surface(
@@ -81,10 +100,10 @@ fun App() {
                     HomeScreen(
                         viewModel = homeViewModel,
                         shelfViewModel = shelfViewModel,
-                        userId = "", // TODO: populate with real user id from authService/session
+                        userId = authState.user?.id ?: "",
                         onTopUp = { /* TODO: navigate to TopUp */ },
                         onProfile = { /* TODO: open profile */ },
-                        onSlotClick = { locationId, slotId -> /* TODO: open purchase */ },
+                        onSlotClick = { _, _ -> /* TODO: open purchase */ },
                         onOpenSettings = { /* TODO: open settings */ },
                         onSendFeedback = { /* TODO: send feedback */ },
                         onOpenProfile = { /* TODO: open profile */ }

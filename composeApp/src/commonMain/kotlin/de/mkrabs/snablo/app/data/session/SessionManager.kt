@@ -2,7 +2,6 @@ package de.mkrabs.snablo.app.data.session
 
 import de.mkrabs.snablo.app.domain.model.AuthToken
 import de.mkrabs.snablo.app.domain.model.Session
-import de.mkrabs.snablo.app.domain.model.User
 
 /**
  * Manages user session: token storage, retrieval, and validation
@@ -57,3 +56,10 @@ class InMemorySessionManager : SessionManager {
     }
 }
 
+/**
+ * Default SessionManager used by the app.
+ *
+ * Note: this keeps the user logged in for the lifetime of the running app.
+ * For true persistence across app restarts, add a platform-specific implementation.
+ */
+fun defaultSessionManager(): SessionManager = InMemorySessionManager()
