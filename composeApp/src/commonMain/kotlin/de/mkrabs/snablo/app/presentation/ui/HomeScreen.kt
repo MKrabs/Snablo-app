@@ -20,6 +20,7 @@ import de.mkrabs.snablo.app.presentation.ui.home.BalanceHeaderCard
 import de.mkrabs.snablo.app.presentation.ui.home.CornersSection
 import de.mkrabs.snablo.app.presentation.ui.home.HomeSideDrawer
 import de.mkrabs.snablo.app.presentation.ui.home.RecentTransactionsHeader
+import de.mkrabs.snablo.app.presentation.ui.home.PullRefreshLayout
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
 
@@ -54,38 +55,58 @@ fun HomeScreen(
         onSendFeedback = onSendFeedback
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                item {
-                    BalanceHeaderCard(
-                        balance = uiState.balance,
-                        onTopUp = onTopUp,
-                        onProfile = onProfile
-                    )
-                }
+            PullRefreshLayout(isRefreshing = uiState.isRefreshing, onRefresh = { viewModel.loadForUser(userId, isRefresh = true) }) { listState ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    state = listState
+                ) {
+                    item {
+                        BalanceHeaderCard(
+                            balance = uiState.balance,
+                            onTopUp = onTopUp,
+                            onProfile = onProfile
+                        )
+                    }
 
-                item {
-                    // New: locations/corners section (empty/one/many carousel)
-                    CornersSection(
-                        corners = uiState.corners,
-                        onShelfClick = onSlotClick
-                    )
-                }
+                    item {
+                        // New: locations/corners section (empty/one/many carousel)
+                        CornersSection(
+                            corners = uiState.corners,
+                            onShelfClick = onSlotClick,
+                            locationsDebugText = uiState.locationsDebugText
+                        )
+                    }
 
-                item {
-                    RecentTransactionsHeader()
-                }
+                    item {
+                        RecentTransactionsHeader()
+                    }
 
-                items(uiState.recentTransactions) { entry ->
-                    TransactionCard(entry)
-                }
+                    items(uiState.recentTransactions) { entry ->
+                        TransactionCard(entry)
+                    }
 
-                // spacer at bottom to allow additional scroll past content (approx. 50% screen)
-                item { Spacer(modifier = Modifier.height(300.dp)) }
+                    // spacer at bottom to allow additional scroll past content (approx. 50% screen)
+                    item {
+                        LongDummyContent()
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun LongDummyContent() {
+    // Produces a lot of text lines to force a scrollable page for debugging
+    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(top = 16.dp)) {
+        for (i in 1..100) {
+            androidx.compose.material3.Text(
+                text = "Dummy content line #$i",
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
         }
     }
 }
