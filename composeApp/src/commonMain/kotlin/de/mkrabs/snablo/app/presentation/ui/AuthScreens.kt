@@ -45,7 +45,11 @@ fun LoginScreen(
         // Use BoxWithConstraints to react to available width
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isWide = maxWidth > 700.dp
-            val scrollState = rememberScrollState()
+            // Use separate scroll states for each scrollable area and ensure they have
+            // bounded height constraints so Compose doesn't see infinite maxHeight.
+            val leftScrollState = rememberScrollState()
+            val rightScrollState = rememberScrollState()
+            val narrowScrollState = rememberScrollState()
 
             if (isWide) {
                 // Two-column layout with vertical divider
@@ -60,7 +64,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .widthIn(max = 400.dp)
                             .fillMaxHeight()
-                            .verticalScroll(scrollState),
+                            .verticalScroll(leftScrollState),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // Huge SNABLO logo placeholder
@@ -177,7 +181,10 @@ fun LoginScreen(
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 8.dp)
-                            .verticalScroll(scrollState),
+                            // Make sure the right column gets a bounded height from the
+                            // parent Row / container so verticalScroll sees finite constraints.
+                            .fillMaxHeight()
+                            .verticalScroll(rightScrollState),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -198,91 +205,96 @@ fun LoginScreen(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .widthIn(max = 400.dp)
-                        .verticalScroll(scrollState),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Huge SNABLO logo placeholder
-                    Text(
-                        text = "SNABLO",
-                        style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                    )
+                        // Limit the height available to this centered column to the
+                        // available maxHeight so verticalScroll does not receive
+                        // unbounded (infinite) constraints. `heightIn` isn't available
+                        // in this Compose version in commonMain, so use `height(max)`.
+                        .height(maxHeight)
+                        .verticalScroll(narrowScrollState),
+                     horizontalAlignment = Alignment.CenterHorizontally
+                 ) {
+                     // Huge SNABLO logo placeholder
+                     Text(
+                         text = "SNABLO",
+                         style = MaterialTheme.typography.displayLarge,
+                         modifier = Modifier.padding(bottom = 24.dp)
+                     )
 
-                    // Email: singleLine, email keyboard to help autofill
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email") },
-                        singleLine = true,
-                        enabled = !uiState.isLoading && !uiState.isSsoLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                    )
+                     // Email: singleLine, email keyboard to help autofill
+                     OutlinedTextField(
+                         value = email,
+                         onValueChange = { email = it },
+                         label = { Text("Email") },
+                         singleLine = true,
+                         enabled = !uiState.isLoading && !uiState.isSsoLoading,
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .padding(bottom = 12.dp)
+                     )
 
-                    // Password: singleLine, password keyboard
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Password") },
-                        singleLine = true,
-                        enabled = !uiState.isLoading && !uiState.isSsoLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        visualTransformation = PasswordVisualTransformation()
-                    )
+                     // Password: singleLine, password keyboard
+                     OutlinedTextField(
+                         value = password,
+                         onValueChange = { password = it },
+                         label = { Text("Password") },
+                         singleLine = true,
+                         enabled = !uiState.isLoading && !uiState.isSsoLoading,
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .padding(bottom = 16.dp),
+                         visualTransformation = PasswordVisualTransformation()
+                     )
 
-                    if (uiState.error != null) {
-                        Text(
-                            text = uiState.error ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                    }
+                     if (uiState.error != null) {
+                         Text(
+                             text = uiState.error ?: "",
+                             color = MaterialTheme.colorScheme.error,
+                             modifier = Modifier.padding(bottom = 12.dp)
+                         )
+                     }
 
-                    Button(
-                        onClick = { viewModel.login(email, password) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        enabled = !uiState.isLoading && !uiState.isSsoLoading && email.isNotBlank() && password.isNotBlank()
-                    ) {
-                        if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                        else Text("Login")
-                    }
+                     Button(
+                         onClick = { viewModel.login(email, password) },
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .height(48.dp),
+                         enabled = !uiState.isLoading && !uiState.isSsoLoading && email.isNotBlank() && password.isNotBlank()
+                     ) {
+                         if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                         else Text("Login")
+                     }
 
-                    // Divider with a centered dot
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 18.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Divider(modifier = Modifier.weight(1f))
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp)
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onSurface)
-                        )
-                        Divider(modifier = Modifier.weight(1f))
-                    }
+                     // Divider with a centered dot
+                     Row(
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .padding(vertical = 18.dp),
+                         verticalAlignment = Alignment.CenterVertically
+                     ) {
+                         Divider(modifier = Modifier.weight(1f))
+                         Box(
+                             modifier = Modifier
+                                 .padding(horizontal = 12.dp)
+                                 .size(10.dp)
+                                 .clip(CircleShape)
+                                 .background(MaterialTheme.colorScheme.onSurface)
+                         )
+                         Divider(modifier = Modifier.weight(1f))
+                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                     Spacer(modifier = Modifier.height(4.dp))
 
-                    Button(
-                        onClick = { viewModel.loginWithMicrosoft() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        enabled = !uiState.isLoading && !uiState.isSsoLoading
-                    ) {
-                        if (uiState.isSsoLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                        else Text("Sign in with Microsoft")
-                    }
-                }
+                     Button(
+                         onClick = { viewModel.loginWithMicrosoft() },
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .height(48.dp),
+                         enabled = !uiState.isLoading && !uiState.isSsoLoading
+                     ) {
+                         if (uiState.isSsoLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                         else Text("Sign in with Microsoft")
+                     }
+                 }
             }
         }
 

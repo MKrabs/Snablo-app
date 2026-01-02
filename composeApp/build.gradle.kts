@@ -25,6 +25,8 @@ kotlin {
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.ktor.client.android)
             implementation(libs.androidx.core.ktx)
+            // Coil for Android image loading
+            implementation("io.coil-kt:coil-compose:2.4.0")
         }
         commonMain.dependencies {
             implementation(compose.runtime)

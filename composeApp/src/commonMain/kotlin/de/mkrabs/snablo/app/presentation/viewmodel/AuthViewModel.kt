@@ -1,5 +1,6 @@
 package de.mkrabs.snablo.app.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.mkrabs.snablo.app.data.auth.AuthService
@@ -30,6 +31,7 @@ class AuthViewModel(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
+        Log.d("Snablo", "AuthViewModel.init - checking existing session")
         checkExistingSession()
     }
 
@@ -37,7 +39,9 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
+                Log.d("Snablo", "AuthViewModel.checkExistingSession - calling authService.hasValidSession()")
                 if (authService.hasValidSession()) {
+                    Log.d("Snablo", "AuthViewModel.checkExistingSession - has valid session, fetching user")
                     val user = authService.getCurrentUser()
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -46,9 +50,11 @@ class AuthViewModel(
                         error = null
                     )
                 } else {
+                    Log.d("Snablo", "AuthViewModel.checkExistingSession - no valid session")
                     _uiState.value = _uiState.value.copy(isLoading = false)
                 }
             } catch (e: Exception) {
+                Log.w("Snablo", "AuthViewModel.checkExistingSession - error: ${e.message}")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Failed to check session"

@@ -21,23 +21,96 @@ class ShelfRepositoryImpl(
     private val apiClient: PocketBaseClient
 ) : ShelfRepository {
     override suspend fun getSlotMappings(locationId: String): Result<List<SlotMapping>> {
-        return when (val result = apiClient.getSlotMappings(locationId)) {
-            is ApiResult.Success -> {
-                val slots = result.data.items.map { dto ->
-                    SlotMapping(
-                        id = dto.id,
-                        locationId = dto.locationId,
-                        slotIndex = dto.slotIndex,
-                        catalogItemId = dto.catalogItemId,
-                        inventoryCount = dto.inventoryCount,
-                        createdAt = dto.created,
-                        updatedAt = dto.updated
-                    )
+        return try {
+            when (val result = apiClient.getSlotMappings(locationId)) {
+                is ApiResult.Success -> {
+                    val slots = result.data.items.map { dto ->
+                        SlotMapping(
+                            id = dto.id,
+                            locationId = dto.locationId,
+                            slotIndex = dto.slotIndex,
+                            catalogItemId = dto.catalogItemId,
+                            inventoryCount = dto.inventoryCount,
+                            createdAt = dto.created,
+                            updatedAt = dto.updated
+                        )
+                    }
+                    // If we got non-empty slot mappings, return them
+                    if (slots.isNotEmpty()) return Result.success(slots)
                 }
-                Result.success(slots)
+                is ApiResult.Error -> {
+                    // fallthrough to try shelves/corners compatibility endpoints
+                }
+                else -> {
+                    // fallthrough
+                }
             }
-            is ApiResult.Error -> Result.failure(Exception(result.message))
-            else -> Result.failure(Exception("Unknown error"))
+
+            // Fallback 1: try the 'shelves' collection (some PocketBase schemas use this)
+            when (val shelvesResult = apiClient.getShelves(filter = "cornerId=\"$locationId\"")) {
+                is ApiResult.Success -> {
+                    val shelfItems = shelvesResult.data.items
+                    if (shelfItems.isNotEmpty()) {
+                        val mapped = shelfItems.map { s ->
+                            val created = s.created ?: s.createdAt ?: ""
+                            val updated = s.updated ?: s.updatedAt
+                            SlotMapping(
+                                id = s.id,
+                                // use the provided locationId param as the logical location if caller passed a corner id
+                                locationId = locationId,
+                                slotIndex = s.orderIndex,
+                                catalogItemId = s.catalogItemId,
+                                inventoryCount = s.stockCount,
+                                createdAt = created,
+                                updatedAt = updated
+                            )
+                        }
+                        return Result.success(mapped)
+                    }
+                }
+                else -> {
+                    // continue to next fallback
+                }
+            }
+
+            // Fallback 2: query corners for the given locationId, then fetch shelves for each corner
+            when (val cornersResult = apiClient.getCorners(filter = "locationId=\"$locationId\"")) {
+                is ApiResult.Success -> {
+                    val corners = cornersResult.data.items
+                    if (corners.isNotEmpty()) {
+                        val allShelves = mutableListOf<SlotMapping>()
+                        for (corner in corners) {
+                            when (val sres = apiClient.getShelves(filter = "cornerId=\"${corner.id}\"")) {
+                                is ApiResult.Success -> {
+                                    allShelves += sres.data.items.map { s ->
+                                        val created = s.created ?: s.createdAt ?: ""
+                                        val updated = s.updated ?: s.updatedAt
+                                        SlotMapping(
+                                            id = s.id,
+                                            locationId = corner.locationId ?: locationId,
+                                            slotIndex = s.orderIndex,
+                                            catalogItemId = s.catalogItemId,
+                                            inventoryCount = s.stockCount,
+                                            createdAt = created,
+                                            updatedAt = updated
+                                        )
+                                    }
+                                }
+                                else -> continue
+                            }
+                        }
+                        return Result.success(allShelves)
+                    }
+                }
+                else -> {
+                    // no corners found or error
+                }
+            }
+
+            // If nothing found, return empty list (not necessarily an error)
+            Result.success(emptyList())
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -87,4 +160,3 @@ class ShelfRepositoryImpl(
         }
     }
 }
-

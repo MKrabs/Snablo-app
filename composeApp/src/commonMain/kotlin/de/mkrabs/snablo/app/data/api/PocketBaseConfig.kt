@@ -22,6 +22,9 @@ object PocketBaseConfig {
     val ledgerEntriesUrl: String get() = recordsUrl("ledger-entries")
     val nfcTokensUrl: String get() = recordsUrl("nfc-tokens")
     val cashCountsUrl: String get() = recordsUrl("cash-counts")
+    // Compatibility endpoints for PocketBase collections
+    val shelvesUrl: String get() = recordsUrl("shelves")
+    val cornersUrl: String get() = recordsUrl("corners")
 }
 
 /**

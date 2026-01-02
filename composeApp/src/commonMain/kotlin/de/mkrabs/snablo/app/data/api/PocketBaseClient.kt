@@ -219,5 +219,40 @@ class PocketBaseClient(
             ApiResult.Error(code = 500, message = "Failed to fetch cash counts", exception = e)
         }
     }
-}
 
+    // ========== Shelves (compat) ==========
+
+    suspend fun getShelves(page: Int = 1, perPage: Int = 50, filter: String? = null): ApiResult<PaginatedResponse<ShelfDto>> {
+        return try {
+            val url = buildString {
+                append(PocketBaseConfig.shelvesUrl)
+                append("?page=$page&perPage=$perPage")
+                if (!filter.isNullOrBlank()) append("&filter=${filter}")
+            }
+            val response = httpClient.get(url) { contentType(ContentType.Application.Json) }.body<PaginatedResponse<ShelfDto>>()
+            ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 500, message = "Failed to fetch shelves", exception = e)
+        }
+    }
+
+    // ========== Corners (compat) ==========
+
+    suspend fun getCorners(page: Int = 1, perPage: Int = 50, filter: String? = null): ApiResult<PaginatedResponse<CornerDto>> {
+        return try {
+            val url = buildString {
+                append(PocketBaseConfig.cornersUrl)
+                append("?page=$page&perPage=$perPage")
+                if (!filter.isNullOrBlank()) append("&filter=${filter}")
+            }
+            val response = httpClient.get(url) { contentType(ContentType.Application.Json) }.body<PaginatedResponse<CornerDto>>()
+            ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 500, message = "Failed to fetch corners", exception = e)
+        }
+    }
+}

@@ -52,45 +52,52 @@ fun HomeScreen(
         drawerState = drawerState,
         onProfile = onProfile,
         onOpenSettings = onOpenSettings,
-        onSendFeedback = onSendFeedback
+        onSendFeedback = onSendFeedback,
+        locations = uiState.corners.map { it.location.id to it.location.name },
+        currentLocationId = uiState.selectedLocationId,
+        onLocationSelected = { id -> viewModel.selectLocation(id) }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            PullRefreshLayout(isRefreshing = uiState.isRefreshing, onRefresh = { viewModel.loadForUser(userId, isRefresh = true) }) { listState ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    state = listState
-                ) {
-                    item {
-                        BalanceHeaderCard(
-                            balance = uiState.balance,
-                            onTopUp = onTopUp,
-                            onProfile = onProfile
-                        )
-                    }
+        PullRefreshLayout(isRefreshing = uiState.isRefreshing, onRefresh = { viewModel.loadForUser(userId, isRefresh = true) }) { listState ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                state = listState
+            ) {
+                item {
+                    BalanceHeaderCard(
+                        balance = uiState.balance,
+                        onTopUp = onTopUp,
+                        onProfile = onProfile
+                    )
+                }
 
-                    item {
-                        // New: locations/corners section (empty/one/many carousel)
-                        CornersSection(
-                            corners = uiState.corners,
-                            onShelfClick = onSlotClick,
-                            locationsDebugText = uiState.locationsDebugText
-                        )
-                    }
+                item {
+                    // Show corner carousel scoped to current location (if selected). This
+                    // removes the previous locations carousel — CornersSection now receives
+                    // only corners for the selected location.
+                    val cornersToShow = uiState.selectedLocationId?.let { selectedId ->
+                        uiState.corners.filter { it.location.id == selectedId }
+                    } ?: uiState.corners
 
-                    item {
-                        RecentTransactionsHeader()
-                    }
+                    CornersSection(
+                        corners = cornersToShow,
+                        onShelfClick = onSlotClick,
+                        locationsDebugText = uiState.locationsDebugText
+                    )
+                }
 
-                    items(uiState.recentTransactions) { entry ->
-                        TransactionCard(entry)
-                    }
+                item {
+                    RecentTransactionsHeader()
+                }
 
-                    // spacer at bottom to allow additional scroll past content (approx. 50% screen)
-                    item {
-                        LongDummyContent()
-                    }
+                items(uiState.recentTransactions) { entry ->
+                    TransactionCard(entry)
+                }
+
+                // spacer at bottom to allow additional scroll past content (approx. 50% screen)
+                item {
+                    LongDummyContent()
                 }
             }
         }

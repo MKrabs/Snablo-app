@@ -9,8 +9,8 @@ class SnabloApplication : Application() {
     }
 
     companion object {
-        lateinit var instance: Application
+        // Make instance the concrete type to avoid accidental casts elsewhere
+        lateinit var instance: SnabloApplication
             private set
     }
 }
-

@@ -83,7 +83,7 @@ fun CashCountScreen(
             onValueChange = { notes = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 80.dp)
+                .height(80.dp)
                 .padding(bottom = 16.dp),
             placeholder = { Text("e.g., cash count performed on time") },
             enabled = !uiState.isLoading
@@ -298,4 +298,3 @@ fun CashCountCard(cashCount: CashCount) {
         }
     }
 }
-

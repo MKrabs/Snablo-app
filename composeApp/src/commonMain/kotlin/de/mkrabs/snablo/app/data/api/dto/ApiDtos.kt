@@ -6,6 +6,7 @@ import de.mkrabs.snablo.app.domain.model.PaymentMethod
 import de.mkrabs.snablo.app.domain.model.User
 import de.mkrabs.snablo.app.domain.model.UserRole
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 // ========== Authentication ==========
 
@@ -196,7 +197,7 @@ data class PaginatedResponse<T>(
     val items: List<T> = emptyList()
 )
 
-// ========== Error Response =========
+// ========== Error Response ==========
 
 @Serializable
 data class ErrorResponse(
@@ -205,3 +206,48 @@ data class ErrorResponse(
     val data: Map<String, String>? = null
 )
 
+// ========== Compatibility DTOs for older/newer API collections ==========
+
+/**
+ * Some PocketBase installations expose `shelves` and `corners` collections.
+ * These DTOs provide compatibility with the API docs provided by the user.
+ */
+@Serializable
+data class ShelfDto(
+    val id: String,
+    // relation to corner record
+    val cornerId: String,
+    // relation to catalog item
+    val catalogItemId: String,
+    // ordering / slot index on the shelf
+    @SerialName("order") val orderIndex: Int = 0,
+    // how many items currently in stock
+    @SerialName("stockCount") val stockCount: Int = 0,
+    // price represented in cents on some installations
+    @SerialName("priceCents") val priceCents: Int? = null,
+    // ISO timestamp when last restocked
+    val lastRestockedAt: String? = null,
+    // PocketBase timestamps: some collections use `created`/`updated`, others `createdAt`/`updatedAt`.
+    // Accept both to be robust.
+    val created: String? = null,
+    val updated: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+) {
+    // Helper to convert cents -> euro value when available
+    fun priceEuros(): Double? = priceCents?.let { it / 100.0 }
+}
+
+@Serializable
+data class CornerDto(
+    val id: String,
+    val name: String,
+    val order: Int? = null,
+    // optional relation to a parent location record
+    val locationId: String? = null,
+    // Accept both timestamp variants
+    val created: String? = null,
+    val updated: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)

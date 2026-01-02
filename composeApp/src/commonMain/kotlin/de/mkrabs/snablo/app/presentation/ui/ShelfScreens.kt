@@ -126,9 +126,12 @@ fun DigitalShelfScreen(
                 items(uiState.slots) { slot ->
                     val item = uiState.catalogItems.find { it.id == slot.catalogItemId }
                     if (item != null) {
+                        val price = uiState.prices[slot.id]
                         ShelfSlotCard(
                             item = item.name,
                             stockState = slot.stockState,
+                            price = price,
+                            inventoryCount = slot.inventoryCount,
                             onClick = { onSlotSelected(location.id, slot.id) }
                         )
                     }
@@ -142,6 +145,8 @@ fun DigitalShelfScreen(
 fun ShelfSlotCard(
     item: String,
     stockState: StockState,
+    price: Double? = null,
+    inventoryCount: Int? = null,
     onClick: () -> Unit
 ) {
     Card(
@@ -157,7 +162,15 @@ fun ShelfSlotCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(item, style = MaterialTheme.typography.titleMedium)
+            Column {
+                Text(item, style = MaterialTheme.typography.titleMedium)
+                if (inventoryCount != null) {
+                    Text("$inventoryCount left", style = MaterialTheme.typography.labelSmall)
+                }
+                if (price != null) {
+                    Text("${String.format("%.2f", price)}€", style = MaterialTheme.typography.labelSmall)
+                }
+            }
 
             val stockLabel = when (stockState) {
                 StockState.EMPTY -> "EMPTY"
@@ -183,5 +196,3 @@ fun ShelfSlotCard(
         }
     }
 }
-
-

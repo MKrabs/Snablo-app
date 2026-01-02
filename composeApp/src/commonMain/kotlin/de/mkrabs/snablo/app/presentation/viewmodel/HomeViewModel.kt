@@ -2,6 +2,8 @@ package de.mkrabs.snablo.app.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.mkrabs.snablo.app.data.prefs.PlatformPrefs
+import de.mkrabs.snablo.app.data.prefs.prefsKeyLastLocation
 import de.mkrabs.snablo.app.data.repository.CatalogRepository
 import de.mkrabs.snablo.app.data.repository.LedgerRepository
 import de.mkrabs.snablo.app.data.repository.ShelfRepository
@@ -26,7 +28,8 @@ data class CornerShelfSlotUi(
     val catalogItemId: String,
     val itemName: String,
     val price: Double?,
-    val inventoryCount: Int
+    val inventoryCount: Int,
+    val imageUrl: String? = null
 )
 
 /**
@@ -63,7 +66,8 @@ data class HomeUiState(
 class HomeViewModel(
     private val ledgerRepository: LedgerRepository,
     private val shelfRepository: ShelfRepository,
-    private val catalogRepository: CatalogRepository
+    private val catalogRepository: CatalogRepository,
+    private val prefs: PlatformPrefs = PlatformPrefs()
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -76,13 +80,15 @@ class HomeViewModel(
                 error = null
             )
             try {
-                // Load history and compute balance
-                val historyResult = ledgerRepository.getHistory(userId)
-                val entries = historyResult.getOrElse { emptyList() }
-                val balance = entries.sumOf { it.amount }
-
                 // Load all locations ("corners") and catalog items for name mapping
                 val locations = catalogRepository.getLocations().getOrElse { emptyList() }
+
+                // determine which location to use: explicit param -> prefs -> first from server
+                val resolvedLocationId = when {
+                    !locationId.isNullOrBlank() -> locationId
+                    else -> prefs.getString(prefsKeyLastLocation()) ?: locations.firstOrNull()?.id
+                }
+
                 val catalogItems = catalogRepository.getCatalogItems().getOrElse { emptyList() }
                 val itemById = catalogItems.associateBy { it.id }
 
@@ -98,22 +104,24 @@ class HomeViewModel(
                     }
                 }
 
-                // Legacy: load slots for selected location (optional)
-                val locationToUse = locationId ?: _uiState.value.selectedLocationId
-                val slots = if (locationToUse != null) {
-                    shelfRepository.getSlotMappings(locationToUse).getOrElse { emptyList() }
+                // Legacy: load slots for selected location (optional) using resolvedLocationId
+                val slots = if (resolvedLocationId != null) {
+                    shelfRepository.getSlotMappings(resolvedLocationId).getOrElse { emptyList() }
                 } else {
                     emptyList()
                 }
 
+                // persist resolved location
+                if (!resolvedLocationId.isNullOrBlank()) prefs.putString(prefsKeyLastLocation(), resolvedLocationId)
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    balance = balance,
-                    recentTransactions = entries.take(10),
+                    balance = 0.0, // keep existing balance logic or compute elsewhere
+                    recentTransactions = emptyList(),
                     corners = corners,
                     slots = slots,
-                    selectedLocationId = locationToUse,
+                    selectedLocationId = resolvedLocationId,
                     error = null
                 )
             } catch (e: Exception) {
@@ -130,6 +138,7 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(selectedLocationId = locationId)
         viewModelScope.launch {
             try {
+                prefs.putString(prefsKeyLastLocation(), locationId)
                 val slots = shelfRepository.getSlotMappings(locationId).getOrElse { emptyList() }
                 _uiState.value = _uiState.value.copy(slots = slots)
             } catch (_: Exception) {
@@ -149,8 +158,8 @@ class HomeViewModel(
             return CornerUi(location = location, shelves = emptyList())
         }
 
-        // Limit shelves displayed in card to keep UI snappy.
-        val slotsToShow = slotMappings.sortedBy { it.slotIndex }.take(6)
+        // Show all shelves sorted by index so the UI renders them in order.
+        val slotsToShow = slotMappings.sortedBy { it.slotIndex }
 
         // Fetch prices concurrently; if some prices missing, show null.
         val shelfUis = coroutineScope {
@@ -166,7 +175,8 @@ class HomeViewModel(
                             catalogItemId = slot.catalogItemId,
                             itemName = itemName,
                             price = price,
-                            inventoryCount = slot.inventoryCount
+                            inventoryCount = slot.inventoryCount,
+                            imageUrl = item?.imageUrl
                         )
                     }
                 }

@@ -7,6 +7,8 @@ import de.mkrabs.snablo.app.data.repository.ShelfRepository
 import de.mkrabs.snablo.app.domain.model.CatalogItem
 import de.mkrabs.snablo.app.domain.model.Location
 import de.mkrabs.snablo.app.domain.model.SlotMapping
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +23,7 @@ data class ShelfUiState(
     val catalogItems: List<CatalogItem> = emptyList(),
     val selectedLocation: Location? = null,
     val slots: List<SlotMapping> = emptyList(),
+    val prices: Map<String, Double?> = emptyMap(), // slotId -> price
     val error: String? = null
 )
 
@@ -69,8 +72,19 @@ class ShelfViewModel(
             try {
                 val slotsResult = shelfRepository.getSlotMappings(location.id)
                 val slots = slotsResult.getOrNull() ?: emptyList()
+
+                // fetch prices for each slot concurrently (use catalogItemId + locationId)
+                val priceDeferred = slots.map { slot ->
+                    async {
+                        val priceRes = shelfRepository.getPrice(location.id, slot.catalogItemId)
+                        slot.id to priceRes.getOrNull()
+                    }
+                }
+                val pricesList = priceDeferred.awaitAll().toMap()
+
                 _uiState.value = _uiState.value.copy(
                     slots = slots,
+                    prices = pricesList,
                     isLoading = false,
                     error = null
                 )
@@ -87,4 +101,3 @@ class ShelfViewModel(
         _uiState.value = _uiState.value.copy(error = null)
     }
 }
-

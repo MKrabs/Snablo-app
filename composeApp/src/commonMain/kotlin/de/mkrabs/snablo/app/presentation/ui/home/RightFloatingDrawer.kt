@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -200,6 +201,9 @@ fun RightFloatingDrawer(
                 color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier
                     .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                    // Fill the available height so children like LazyColumn or
+                    // verticalScroll see finite height constraints instead of infinity.
+                    .fillMaxHeight()
                     .width(drawerWidthDp.dp)
             ) {
                 drawerContent()
