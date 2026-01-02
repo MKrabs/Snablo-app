@@ -150,7 +150,7 @@ class HomeViewModel(
     private suspend fun buildCornerUi(
         location: Location,
         itemById: Map<String, CatalogItem>
-    ): CornerUi? {
+    ): CornerUi {
         val slotMappings = shelfRepository.getSlotMappings(location.id).getOrElse { emptyList() }
         if (slotMappings.isEmpty()) {
             // If a location has no shelves, we still may want to show the location itself.
@@ -166,8 +166,13 @@ class HomeViewModel(
             slotsToShow
                 .map { slot ->
                     async {
-                        val item = itemById[slot.catalogItemId]
-                        val itemName = item?.name ?: slot.catalogItemId
+                        var item = itemById[slot.catalogItemId]
+                        // If not present in the preloaded map, try to refresh catalog items once
+                        if (item == null) {
+                            val refreshed = catalogRepository.getCatalogItems().getOrElse { emptyList() }
+                            item = refreshed.find { it.id == slot.catalogItemId }
+                        }
+                        val itemName = item?.name ?: de.mkrabs.snablo.app.util.formatItemLabel(slot.catalogItemId)
                         val price = shelfRepository.getPrice(location.id, slot.catalogItemId).getOrNull()
                         CornerShelfSlotUi(
                             slotId = slot.id,

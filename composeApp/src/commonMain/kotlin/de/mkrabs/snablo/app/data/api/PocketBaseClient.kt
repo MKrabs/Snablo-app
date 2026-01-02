@@ -79,6 +79,19 @@ class PocketBaseClient(
         }
     }
 
+    suspend fun getCatalogItemById(id: String): ApiResult<CatalogItemDto> {
+        return try {
+            val response = httpClient.get("${PocketBaseConfig.catalogItemsUrl}/$id") {
+                contentType(ContentType.Application.Json)
+            }.body<CatalogItemDto>()
+            ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 404, message = "Catalog item not found: ${e.message}", exception = e)
+        }
+    }
+
     // ========== Locations ==========
 
     suspend fun getLocations(): ApiResult<PaginatedResponse<LocationDto>> {

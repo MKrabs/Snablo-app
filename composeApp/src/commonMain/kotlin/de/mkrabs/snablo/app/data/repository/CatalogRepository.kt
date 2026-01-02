@@ -19,11 +19,13 @@ class CatalogRepositoryImpl(
         return when (val result = apiClient.getCatalogItems()) {
             is ApiResult.Success -> {
                 val items = result.data.items.map { dto ->
+                    val image = dto.imageUrl ?: dto.img
+                    val category = dto.category ?: dto.categoryId?.firstOrNull() ?: ""
                     CatalogItem(
                         id = dto.id,
                         name = dto.name,
-                        category = dto.category,
-                        imageUrl = dto.imageUrl,
+                        category = category,
+                        imageUrl = image,
                         description = dto.description,
                         createdAt = dto.created,
                         updatedAt = dto.updated

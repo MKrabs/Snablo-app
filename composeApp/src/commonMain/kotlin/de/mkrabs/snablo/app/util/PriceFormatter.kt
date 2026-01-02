@@ -24,3 +24,12 @@ fun formatPriceEu(amount: Double?): String {
     }
 }
 
+/**
+ * Heuristic formatter for item labels: previously this returned a short friendly
+ * label for opaque ids; user requested to undo that change, so return the raw
+ * trimmed string (or "—" for blank/null).
+ */
+fun formatItemLabel(raw: String?): String {
+    if (raw.isNullOrBlank()) return "—"
+    return raw.trim()
+}

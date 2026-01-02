@@ -115,11 +115,31 @@ class ShelfRepositoryImpl(
     }
 
     override suspend fun getPrice(locationId: String, catalogItemId: String): Result<Double> {
-        return when (val result = apiClient.getPrice(locationId, catalogItemId)) {
-            is ApiResult.Success -> Result.success(result.data.price)
-            is ApiResult.Error -> Result.failure(Exception(result.message))
-            else -> Result.failure(Exception("Unknown error"))
+        // Primary: try location-prices collection
+        when (val result = apiClient.getPrice(locationId, catalogItemId)) {
+            is ApiResult.Success -> return Result.success(result.data.price)
+            is ApiResult.Error -> {
+                // fallthrough to try shelves.priceCents as a fallback
+            }
+            else -> {
+                // fallthrough
+            }
         }
+
+        // Fallback: some PocketBase setups store price in the `shelves` collection as priceCents
+        try {
+            val shelvesRes = apiClient.getShelves(page = 1, perPage = 50, filter = "catalogItemId=\"$catalogItemId\"")
+            if (shelvesRes is ApiResult.Success) {
+                val found = shelvesRes.data.items.firstOrNull { it.priceCents != null }
+                if (found != null) {
+                    return Result.success(found.priceEuros() ?: throw Exception("Invalid priceCents"))
+                }
+            }
+        } catch (e: Exception) {
+            // ignore fallback errors and return original error below
+        }
+
+        return Result.failure(Exception("Price not found for location=$locationId, item=$catalogItemId"))
     }
 
     override suspend fun getSlotDetails(

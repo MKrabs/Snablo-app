@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.filter
 import de.mkrabs.snablo.app.presentation.viewmodel.CornerUi
 import de.mkrabs.snablo.app.util.formatPriceEu
+import de.mkrabs.snablo.app.util.formatItemLabel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -146,11 +147,12 @@ fun SnackCard(name: String, price: Double?, imageUrl: String?, inventoryCount: I
             // RemoteImage will render a platform-appropriate image or placeholder (same package)
             RemoteImage(imageUrl = imageUrl, modifier = Modifier.size(56.dp))
             Spacer(modifier = Modifier.height(6.dp))
-            Text(text = name, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "${inventoryCount} left", style = MaterialTheme.typography.labelSmall)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = formatPriceEu(price), style = MaterialTheme.typography.labelSmall)
+            Text(text = formatItemLabel(name), style = MaterialTheme.typography.bodySmall, maxLines = 2)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = formatPriceEu(price), style = MaterialTheme.typography.labelSmall)
+                Text(text = "${inventoryCount} left", style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }

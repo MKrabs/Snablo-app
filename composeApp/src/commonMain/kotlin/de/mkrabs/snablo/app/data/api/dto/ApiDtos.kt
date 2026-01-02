@@ -57,8 +57,12 @@ data class UserDto(
 data class CatalogItemDto(
     val id: String,
     val name: String,
-    val category: String,
+    // Some PB schemas use a simple 'category' string, others use a relation field 'categoryId' (array)
+    val category: String? = null,
+    @SerialName("categoryId") val categoryId: List<String>? = null,
+    // image field may be named 'imageUrl' in our API or 'img' in PocketBase
     val imageUrl: String? = null,
+    @SerialName("img") val img: String? = null,
     val description: String? = null,
     val created: String = "",
     val updated: String? = null

@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import de.mkrabs.snablo.app.domain.model.Location
 import de.mkrabs.snablo.app.domain.model.StockState
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
+import de.mkrabs.snablo.app.util.formatItemLabel
 import de.mkrabs.snablo.app.util.formatPriceEu
 
 @Composable
@@ -164,12 +165,11 @@ fun ShelfSlotCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(item, style = MaterialTheme.typography.titleMedium)
-                if (inventoryCount != null) {
-                    Text("$inventoryCount left", style = MaterialTheme.typography.labelSmall)
-                }
-                if (price != null) {
+                Text(formatItemLabel(item), style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(formatPriceEu(price), style = MaterialTheme.typography.labelSmall)
+                    Text("${inventoryCount} left", style = MaterialTheme.typography.labelSmall)
                 }
             }
 
