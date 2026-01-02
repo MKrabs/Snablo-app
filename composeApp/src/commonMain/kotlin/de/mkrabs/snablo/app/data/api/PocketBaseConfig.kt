@@ -7,18 +7,21 @@ object PocketBaseConfig {
     // Read from environment variable POCKETBASE_URL or use default
     var baseUrl: String = System.getenv("POCKETBASE_URL") ?: "https://pocketbase.mkrabs.de"
     var collectionPrefix: String = "/api/collections"
-    var recordsPrefix: String = "/api/records"
+
+    // PocketBase v0.35+: records are under /api/collections/{collection}/records
+    private fun recordsUrl(collection: String): String = "$baseUrl$collectionPrefix/$collection/records"
 
     val authUrl: String get() = "$baseUrl$collectionPrefix/users/auth-with-password"
     val refreshUrl: String get() = "$baseUrl$collectionPrefix/users/refresh"
-    val usersUrl: String get() = "$baseUrl$recordsPrefix/users"
-    val catalogItemsUrl: String get() = "$baseUrl$recordsPrefix/catalog-items"
-    val locationsUrl: String get() = "$baseUrl$recordsPrefix/locations"
-    val slotMappingsUrl: String get() = "$baseUrl$recordsPrefix/slot-mappings"
-    val locationPricesUrl: String get() = "$baseUrl$recordsPrefix/location-prices"
-    val ledgerEntriesUrl: String get() = "$baseUrl$recordsPrefix/ledger-entries"
-    val nfcTokensUrl: String get() = "$baseUrl$recordsPrefix/nfc-tokens"
-    val cashCountsUrl: String get() = "$baseUrl$recordsPrefix/cash-counts"
+
+    val usersUrl: String get() = recordsUrl("users")
+    val catalogItemsUrl: String get() = recordsUrl("catalog-items")
+    val locationsUrl: String get() = recordsUrl("locations")
+    val slotMappingsUrl: String get() = recordsUrl("slot-mappings")
+    val locationPricesUrl: String get() = recordsUrl("location-prices")
+    val ledgerEntriesUrl: String get() = recordsUrl("ledger-entries")
+    val nfcTokensUrl: String get() = recordsUrl("nfc-tokens")
+    val cashCountsUrl: String get() = recordsUrl("cash-counts")
 }
 
 /**
@@ -38,4 +41,3 @@ class ApiException(
     message: String,
     cause: Throwable? = null
 ) : Exception(message, cause)
-

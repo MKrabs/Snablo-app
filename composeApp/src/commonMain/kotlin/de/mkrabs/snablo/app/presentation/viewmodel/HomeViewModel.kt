@@ -50,7 +50,14 @@ data class HomeUiState(
     val slots: List<SlotMapping> = emptyList(),
     val selectedLocationId: String? = null,
 
-    val error: String? = null
+    val error: String? = null,
+
+    // Debugging support
+    val locationsDebugText: String? = null,
+    val isLocationsRefreshing: Boolean = false,
+
+    // Global refresh indicator for pull-to-refresh
+    val isRefreshing: Boolean = false
 )
 
 class HomeViewModel(
@@ -61,9 +68,13 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    fun loadForUser(userId: String, locationId: String? = null) {
+    fun loadForUser(userId: String, locationId: String? = null, isRefresh: Boolean = false) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = if (!isRefresh) true else _uiState.value.isLoading,
+                isRefreshing = if (isRefresh) true else _uiState.value.isRefreshing,
+                error = null
+            )
             try {
                 // Load history and compute balance
                 val historyResult = ledgerRepository.getHistory(userId)
@@ -97,6 +108,7 @@ class HomeViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    isRefreshing = false,
                     balance = balance,
                     recentTransactions = entries.take(10),
                     corners = corners,
@@ -107,6 +119,7 @@ class HomeViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    isRefreshing = false,
                     error = e.message ?: "Failed to load dashboard"
                 )
             }
@@ -161,5 +174,28 @@ class HomeViewModel(
         }
 
         return CornerUi(location = location, shelves = shelfUis)
+    }
+
+    fun refreshLocationsDebug() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLocationsRefreshing = true)
+            try {
+                val locations = catalogRepository.getLocations().getOrElse { emptyList() }
+                val text = if (locations.isEmpty()) {
+                    "No locations returned"
+                } else {
+                    locations.joinToString(separator = "\n") { loc -> "${loc.id}: ${loc.name}" }
+                }
+                _uiState.value = _uiState.value.copy(
+                    isLocationsRefreshing = false,
+                    locationsDebugText = text
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLocationsRefreshing = false,
+                    locationsDebugText = "ERROR: ${e.message ?: e::class.simpleName}"
+                )
+            }
+        }
     }
 }

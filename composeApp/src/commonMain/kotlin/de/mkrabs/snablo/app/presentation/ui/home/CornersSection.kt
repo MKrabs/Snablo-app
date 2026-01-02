@@ -27,30 +27,52 @@ import de.mkrabs.snablo.app.presentation.viewmodel.CornerUi
 @Composable
 fun CornersSection(
     corners: List<CornerUi>,
-    onShelfClick: (locationId: String, slotId: String) -> Unit
+    onShelfClick: (locationId: String, slotId: String) -> Unit,
+    locationsDebugText: String?
 ) {
-    when {
-        corners.isEmpty() -> {
-            EmptyCornersState()
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Locations", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.weight(1f))
         }
-        corners.size == 1 -> {
-            CornerCard(
-                corner = corners.first(),
-                modifier = Modifier.fillMaxWidth(),
-                onShelfClick = onShelfClick
+
+        if (!locationsDebugText.isNullOrBlank()) {
+            Text(
+                text = locationsDebugText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
         }
-        else -> {
-            LazyRow(
-                contentPadding = PaddingValues(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(corners) { corner ->
-                    CornerCard(
-                        corner = corner,
-                        modifier = Modifier.width(280.dp),
-                        onShelfClick = onShelfClick
-                    )
+
+        when {
+            corners.isEmpty() -> {
+                EmptyCornersState()
+            }
+            corners.size == 1 -> {
+                CornerCard(
+                    corner = corners.first(),
+                    modifier = Modifier.fillMaxWidth(),
+                    onShelfClick = onShelfClick
+                )
+            }
+            else -> {
+                LazyRow(
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(corners) { corner ->
+                        CornerCard(
+                            corner = corner,
+                            modifier = Modifier.width(280.dp),
+                            onShelfClick = onShelfClick
+                        )
+                    }
                 }
             }
         }
@@ -142,4 +164,3 @@ private fun CornerShelfRow(
         Text(priceText, style = MaterialTheme.typography.bodyMedium)
     }
 }
-
