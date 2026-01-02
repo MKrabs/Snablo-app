@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
  */
 data class AuthUiState(
     val isLoading: Boolean = false,
+    val isSsoLoading: Boolean = false,
     val user: User? = null,
     val isAuthenticated: Boolean = false,
     val error: String? = null
@@ -60,24 +61,53 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                val result = authService.login(email, password)
-                result.onSuccess { user ->
+                val result: Result<User> = authService.login(email, password)
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         user = user,
-                        isAuthenticated = true,
+                        isAuthenticated = user != null,
                         error = null
                     )
-                }.onFailure { error ->
+                } else {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = error.message ?: "Login failed"
+                        error = result.exceptionOrNull()?.message ?: "Login failed"
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Login error"
+                )
+            }
+        }
+    }
+
+    fun loginWithMicrosoft() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSsoLoading = true, error = null)
+            try {
+                val result: Result<User> = authService.loginWithMicrosoft()
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    _uiState.value = _uiState.value.copy(
+                        isSsoLoading = false,
+                        user = user,
+                        isAuthenticated = user != null,
+                        error = null
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isSsoLoading = false,
+                        error = result.exceptionOrNull()?.message ?: "SSO login failed"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSsoLoading = false,
+                    error = e.message ?: "SSO error"
                 )
             }
         }
@@ -100,4 +130,3 @@ class AuthViewModel(
         _uiState.value = _uiState.value.copy(error = null)
     }
 }
-

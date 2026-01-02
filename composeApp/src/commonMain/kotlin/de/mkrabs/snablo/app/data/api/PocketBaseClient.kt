@@ -2,11 +2,10 @@ package de.mkrabs.snablo.app.data.api
 
 import de.mkrabs.snablo.app.data.api.dto.*
 import de.mkrabs.snablo.app.data.session.SessionManager
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
+import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
+import io.ktor.http.*
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -71,6 +70,7 @@ class PocketBaseClient(
             val response = httpClient.get("${PocketBaseConfig.catalogItemsUrl}?page=$page&perPage=$perPage") {
                 contentType(ContentType.Application.Json)
             }.body<PaginatedResponse<CatalogItemDto>>()
+            println("Fetched catalog items: $response")
             ApiResult.Success(response)
         } catch (e: CancellationException) {
             throw e
@@ -86,6 +86,7 @@ class PocketBaseClient(
             val response = httpClient.get(PocketBaseConfig.locationsUrl) {
                 contentType(ContentType.Application.Json)
             }.body<PaginatedResponse<LocationDto>>()
+            println("Fetched locations: $response")
             ApiResult.Success(response)
         } catch (e: CancellationException) {
             throw e
@@ -149,14 +150,19 @@ class PocketBaseClient(
         }
     }
 
-    suspend fun getLedgerEntries(userId: String, page: Int = 1, perPage: Int = 50): ApiResult<PaginatedResponse<LedgerEntryDto>> {
+    suspend fun getLedgerEntries(
+        userId: String,
+        page: Int = 1,
+        perPage: Int = 50
+    ): ApiResult<PaginatedResponse<LedgerEntryDto>> {
         return try {
             val headers = getAuthHeader()
             val filter = """filter=userId="$userId""""
-            val response = httpClient.get("${PocketBaseConfig.ledgerEntriesUrl}?$filter&sort=-created&page=$page&perPage=$perPage") {
-                headers.forEach { (k, v) -> header(k, v) }
-                contentType(ContentType.Application.Json)
-            }.body<PaginatedResponse<LedgerEntryDto>>()
+            val response =
+                httpClient.get("${PocketBaseConfig.ledgerEntriesUrl}?$filter&sort=-created&page=$page&perPage=$perPage") {
+                    headers.forEach { (k, v) -> header(k, v) }
+                    contentType(ContentType.Application.Json)
+                }.body<PaginatedResponse<LedgerEntryDto>>()
             ApiResult.Success(response)
         } catch (e: CancellationException) {
             throw e
