@@ -20,7 +20,6 @@ import de.mkrabs.snablo.app.presentation.ui.home.BalanceHeaderCard
 import de.mkrabs.snablo.app.presentation.ui.home.CornersSection
 import de.mkrabs.snablo.app.presentation.ui.home.HomeSideDrawer
 import de.mkrabs.snablo.app.presentation.ui.home.RecentTransactionsHeader
-import de.mkrabs.snablo.app.presentation.ui.home.RightEdgeDrawerAffordance
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
 
@@ -87,9 +86,6 @@ fun HomeScreen(
                 // spacer at bottom to allow additional scroll past content (approx. 50% screen)
                 item { Spacer(modifier = Modifier.height(300.dp)) }
             }
-
-            // right-edge affordance for swipe-to-open (gesture wiring TODO)
-            RightEdgeDrawerAffordance()
         }
     }
 }

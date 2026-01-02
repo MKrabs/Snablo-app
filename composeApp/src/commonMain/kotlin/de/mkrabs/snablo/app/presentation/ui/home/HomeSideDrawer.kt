@@ -1,16 +1,23 @@
 package de.mkrabs.snablo.app.presentation.ui.home
 
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerState
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -21,32 +28,58 @@ fun HomeSideDrawer(
     onSendFeedback: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    ModalNavigationDrawer(
-        drawerState = drawerState,
+    val (open, setOpen) = remember { mutableStateOf(false) }
+
+    RightFloatingDrawer(
+        isOpen = open,
+        onOpenChange = setOpen,
+        openFromAnywhere = true,
         drawerContent = {
-            ModalDrawerSheet(
+            Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(280.dp)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.Bottom
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                NavigationDrawerItem(
-                    label = { Text("Profile") },
-                    selected = false,
-                    onClick = onProfile
-                )
-                NavigationDrawerItem(
-                    label = { Text("Settings") },
-                    selected = false,
-                    onClick = onOpenSettings
-                )
-                NavigationDrawerItem(
-                    label = { Text("Send feedback") },
-                    selected = false,
-                    onClick = onSendFeedback
-                )
+                DrawerItem(iconText = "👤", label = "Profile") {
+                    setOpen(false)
+                    onProfile()
+                }
+                DrawerItem(iconText = "⚙", label = "Settings") {
+                    setOpen(false)
+                    onOpenSettings()
+                }
+                DrawerItem(iconText = "✉", label = "Send feedback") {
+                    setOpen(false)
+                    onSendFeedback()
+                }
             }
         },
-        content = content
+        content = {
+            content()
+        }
     )
+}
+
+@Composable
+private fun DrawerItem(
+    iconText: String,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = iconText, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 12.dp)
+        )
+    }
 }

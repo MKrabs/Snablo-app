@@ -2,7 +2,6 @@ package de.mkrabs.snablo.app
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -82,8 +81,7 @@ fun App() {
     MaterialTheme {
         Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .safeContentPadding(),
+                .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             when (currentScreen) {
