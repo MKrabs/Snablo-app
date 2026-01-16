@@ -1,45 +1,32 @@
 package de.mkrabs.snablo.app.data.repository
 
-import de.mkrabs.snablo.app.data.api.ApiResult
-import de.mkrabs.snablo.app.data.api.PocketBaseClient
-import de.mkrabs.snablo.app.domain.model.User
+import de.mkrabs.snablo.app.data.api.PocketBaseApi
+import de.mkrabs.snablo.app.data.model.User
+import de.mkrabs.snablo.app.data.session.SessionManager
 
-/**
- * Repository for authentication and user operations
- */
-interface AuthRepository {
-    suspend fun login(email: String, password: String): Result<User>
-    suspend fun refresh(): Result<User>
-    suspend fun logout()
-}
+class AuthRepository(
+    private val api: PocketBaseApi,
+    private val sessionManager: SessionManager
+) {
+    val currentUser = sessionManager.currentUser
+    val isLoggedIn get() = sessionManager.isLoggedIn
+    val isAdmin get() = sessionManager.isAdmin
 
-class AuthRepositoryImpl(
-    private val apiClient: PocketBaseClient
-) : AuthRepository {
-    override suspend fun login(email: String, password: String): Result<User> {
-        return when (val result = apiClient.login(email, password)) {
-            is ApiResult.Success -> {
-                // Save token is handled by auth service
-                Result.success(result.data.record.toUser())
-            }
-            is ApiResult.Error -> Result.failure(Exception(result.message))
-            else -> Result.failure(Exception("Unknown error"))
+    suspend fun login(email: String, password: String): Result<User> {
+        return api.login(email, password).map { response ->
+            sessionManager.setSession(response.token, response.record)
+            response.record
         }
     }
 
-    override suspend fun refresh(): Result<User> {
-        return when (val result = apiClient.refresh()) {
-            is ApiResult.Success -> {
-                // Save token is handled by auth service
-                Result.success(result.data.record.toUser())
-            }
-            is ApiResult.Error -> Result.failure(Exception(result.message))
-            else -> Result.failure(Exception("Unknown error"))
+    suspend fun register(email: String, password: String, name: String): Result<User> {
+        return api.register(email, password, name).map { response ->
+            sessionManager.setSession(response.token, response.record)
+            response.record
         }
     }
 
-    override suspend fun logout() {
-        // Session cleanup is handled by auth service
+    fun logout() {
+        sessionManager.clearSession()
     }
 }
-
