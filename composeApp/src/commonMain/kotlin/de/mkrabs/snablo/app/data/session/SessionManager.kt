@@ -1,62 +1,38 @@
 package de.mkrabs.snablo.app.data.session
 
-import de.mkrabs.snablo.app.domain.model.AuthToken
-import de.mkrabs.snablo.app.domain.model.Session
+import de.mkrabs.snablo.app.data.model.User
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Manages user session: token storage, retrieval, and validation
+ * Verwaltet die aktuelle Session (Token + User)
+ *
+ * TODO: Token persistent speichern (platform-spezifisch)
  */
-interface SessionManager {
-    suspend fun saveSession(session: Session)
-    suspend fun getSession(): Session?
-    suspend fun clearSession()
-    suspend fun hasValidSession(): Boolean
-    suspend fun refreshTokenIfNeeded(refreshFn: suspend () -> AuthToken): AuthToken?
-}
+class SessionManager {
 
-/**
- * In-memory session manager for commonMain (will be overridden in androidMain)
- */
-class InMemorySessionManager : SessionManager {
-    private var currentSession: Session? = null
+    private val _currentUser = MutableStateFlow<User?>(null)
+    val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
-    override suspend fun saveSession(session: Session) {
-        currentSession = session
+    private var _token: String? = null
+    val token: String? get() = _token
+
+    val isLoggedIn: Boolean get() = _token != null && _currentUser.value != null
+
+    val isAdmin: Boolean get() = _currentUser.value?.role == de.mkrabs.snablo.app.data.model.UserRole.admin
+
+    fun setSession(token: String, user: User) {
+        _token = token
+        _currentUser.value = user
     }
 
-    override suspend fun getSession(): Session? = currentSession
-
-    override suspend fun clearSession() {
-        currentSession = null
+    fun clearSession() {
+        _token = null
+        _currentUser.value = null
     }
 
-    override suspend fun hasValidSession(): Boolean {
-        val session = currentSession ?: return false
-        val now = System.currentTimeMillis()
-        return session.token.expiresAt > now
-    }
-
-    override suspend fun refreshTokenIfNeeded(refreshFn: suspend () -> AuthToken): AuthToken? {
-        val session = currentSession ?: return null
-        val now = System.currentTimeMillis()
-        val minutesUntilExpiry = (session.token.expiresAt - now) / (60 * 1000)
-
-        // Refresh if less than 30 minutes until expiry
-        return if (minutesUntilExpiry < 30) {
-            try {
-                val newToken = refreshFn()
-                currentSession = session.copy(token = newToken)
-                newToken
-            } catch (e: Exception) {
-                null
-            }
-        } else {
-            session.token
-        }
+    fun updateUser(user: User) {
+        _currentUser.value = user
     }
 }
-
-/**
- * Default SessionManager used by the app.
- */
-fun defaultSessionManager(): SessionManager = platformSessionManager()

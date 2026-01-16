@@ -1,26 +1,37 @@
 package de.mkrabs.snablo.app.util
 
-import kotlin.math.roundToInt
+import kotlin.math.abs
 
 /**
- * Format a price in euros according to the rules:
- * - Use postfix euro sign: "x€"
- * - Use comma as decimal separator
- * - If the value has zero cents, show as integer ("1€")
- * - Otherwise show two decimals ("1,50€", "0,10€")
+ * Formatiert Cent-Beträge als Euro-String (z.B. 150 -> "1,50 €")
  */
-fun formatPriceEu(amount: Double?): String {
-    if (amount == null) return "—"
-    // Work in cents to avoid floating point display issues
-    val cents = (amount * 100.0).roundToInt()
+fun formatPrice(cents: Int): String {
     val euros = cents / 100
-    val centPart = cents % 100
-    return if (centPart == 0) {
-        "${euros}€"
-    } else {
-        // pad cent part to two digits, use comma as decimal separator
-        val centsStr = centPart.toString().padStart(2, '0')
-        "${euros},${centsStr}€"
-    }
+    val centsPart = abs(cents % 100)
+    val centsStr = if (centsPart < 10) "0$centsPart" else "$centsPart"
+    return "$euros,$centsStr €"
 }
 
+/**
+ * Formatiert Cent-Beträge mit Vorzeichen (z.B. 150 -> "+1,50 €", -150 -> "-1,50 €")
+ */
+fun formatPriceWithSign(cents: Int): String {
+    val sign = if (cents >= 0) "+" else "-"
+    val absCents = abs(cents)
+    val euros = absCents / 100
+    val centsPart = absCents % 100
+    val centsStr = if (centsPart < 10) "0$centsPart" else "$centsPart"
+    return "$sign$euros,$centsStr €"
+}
+
+/**
+ * Formatiert Balance mit optionalem Minus (z.B. -150 -> "-1,50 €", 150 -> "1,50 €")
+ */
+fun formatBalance(cents: Int): String {
+    val sign = if (cents < 0) "-" else ""
+    val absCents = abs(cents)
+    val euros = absCents / 100
+    val centsPart = absCents % 100
+    val centsStr = if (centsPart < 10) "0$centsPart" else "$centsPart"
+    return "$sign$euros,$centsStr €"
+}

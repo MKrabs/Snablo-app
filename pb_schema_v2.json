@@ -1,0 +1,241 @@
+[
+  {
+    "name": "users",
+    "type": "auth",
+    "system": false,
+    "fields": [
+      {
+        "name": "name",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      {
+        "name": "avatar",
+        "type": "file",
+        "required": false,
+        "options": {
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "mimeTypes": ["image/jpeg", "image/png", "image/webp"]
+        }
+      },
+      {
+        "name": "role",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["user", "admin"]
+        }
+      }
+    ],
+    "listRule": "id = @request.auth.id || @request.auth.role = 'admin'",
+    "viewRule": "id = @request.auth.id || @request.auth.role = 'admin'",
+    "createRule": "",
+    "updateRule": "id = @request.auth.id",
+    "deleteRule": null,
+    "options": {
+      "allowEmailAuth": true,
+      "allowUsernameAuth": false,
+      "minPasswordLength": 8
+    }
+  },
+  {
+    "name": "categories",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "name": "label",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 1,
+          "max": 50
+        }
+      },
+      {
+        "name": "order",
+        "type": "number",
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "@request.auth.role = 'admin'",
+    "updateRule": "@request.auth.role = 'admin'",
+    "deleteRule": "@request.auth.role = 'admin'"
+  },
+  {
+    "name": "products",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "name": "name",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "required": false,
+        "options": {
+          "max": 500
+        }
+      },
+      {
+        "name": "priceCents",
+        "type": "number",
+        "required": true,
+        "options": {
+          "min": 0,
+          "noDecimal": true
+        }
+      },
+      {
+        "name": "stockCount",
+        "type": "number",
+        "required": true,
+        "options": {
+          "min": 0,
+          "noDecimal": true
+        }
+      },
+      {
+        "name": "image",
+        "type": "file",
+        "required": false,
+        "options": {
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "mimeTypes": ["image/jpeg", "image/png", "image/webp"]
+        }
+      },
+      {
+        "name": "categoryId",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "categories",
+          "cascadeDelete": false,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "order",
+        "type": "number",
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "name": "isActive",
+        "type": "bool",
+        "required": false,
+        "options": {}
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "@request.auth.role = 'admin'",
+    "updateRule": "@request.auth.role = 'admin'",
+    "deleteRule": null
+  },
+  {
+    "name": "transactions",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "name": "userId",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "users",
+          "cascadeDelete": false,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "type",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["purchase", "topup", "correction"]
+        }
+      },
+      {
+        "name": "productId",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "products",
+          "cascadeDelete": false,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "amountCents",
+        "type": "number",
+        "required": true,
+        "options": {
+          "noDecimal": true
+        }
+      },
+      {
+        "name": "quantity",
+        "type": "number",
+        "required": false,
+        "options": {
+          "min": 1,
+          "noDecimal": true
+        }
+      },
+      {
+        "name": "unitPriceCentsSnapshot",
+        "type": "number",
+        "required": false,
+        "options": {
+          "min": 0,
+          "noDecimal": true
+        }
+      },
+      {
+        "name": "paymentMethod",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["cash", "paypal", "wero", "balance"]
+        }
+      },
+      {
+        "name": "note",
+        "type": "text",
+        "required": false,
+        "options": {
+          "max": 500
+        }
+      }
+    ],
+    "listRule": "userId = @request.auth.id || @request.auth.role = 'admin'",
+    "viewRule": "userId = @request.auth.id || @request.auth.role = 'admin'",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": null,
+    "deleteRule": null
+  }
+]
