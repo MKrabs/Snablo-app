@@ -39,7 +39,7 @@ fun TopUpDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    IconButton(onClick = { if (amountEuro > 0) amountEuro -= 1 }) {
+                    IconButton(onClick = { if (amountEuro > 1) amountEuro -= 1 }) {
                         Text("−", style = MaterialTheme.typography.headlineMedium)
                     }
 
