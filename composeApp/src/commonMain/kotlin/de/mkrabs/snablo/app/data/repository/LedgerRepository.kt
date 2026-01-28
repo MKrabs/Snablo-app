@@ -4,6 +4,7 @@ import de.mkrabs.snablo.app.data.api.ApiResult
 import de.mkrabs.snablo.app.data.api.PocketBaseClient
 import de.mkrabs.snablo.app.data.api.dto.CreateLedgerEntryRequest
 import de.mkrabs.snablo.app.domain.model.*
+import de.mkrabs.snablo.app.util.eurosToCents
 
 /**
  * Repository for ledger/transaction operations
@@ -14,6 +15,7 @@ interface LedgerRepository {
         unitPrice: Double,
         locationId: String,
         catalogItemId: String,
+        shelfId: String,
         quantity: Int = 1
     ): Result<LedgerEntry>
 
@@ -37,22 +39,29 @@ class LedgerRepositoryImpl(
         unitPrice: Double,
         locationId: String,
         catalogItemId: String,
+        shelfId: String,
         quantity: Int
     ): Result<LedgerEntry> {
         if (quantity <= 0) {
             return Result.failure(IllegalArgumentException("Quantity must be greater than 0"))
         }
-        val totalPrice = unitPrice * quantity
-        val description = if (quantity > 1) "Qty: $quantity" else null
+        if (shelfId.isBlank()) {
+            return Result.failure(IllegalArgumentException("shelfId is blank"))
+        }
+        val unitPriceCents = eurosToCents(unitPrice)
+        val amountCents = -unitPriceCents * quantity
         val request = CreateLedgerEntryRequest(
-            kind = "PURCHASE",
+            entryType = LedgerEntryType.BALANCE_ENTRY.name,
+            kind = TransactionKind.PURCHASE_DIGITAL.name,
             userId = userId,
-            amount = -totalPrice,  // Negative for spending
-            paymentMethod = "INTERNAL_BALANCE",
+            amountCents = amountCents,
+            cashAffectsExpectedCash = false,
+            paymentMethod = PaymentMethod.PAYPAL.name,
             locationId = locationId,
-            catalogItemId = catalogItemId,
-            priceSnapshot = unitPrice,
-            description = description
+            shelfId = shelfId,
+            catalogItemIdSnapshot = catalogItemId,
+            quantity = quantity,
+            unitPriceCentsSnapshot = unitPriceCents
         )
         return when (val result = apiClient.createLedgerEntry(request)) {
             is ApiResult.Success -> Result.success(result.data.toLedgerEntry())
@@ -67,15 +76,27 @@ class LedgerRepositoryImpl(
         kind: TransactionKind,
         locationId: String?
     ): Result<LedgerEntry> {
-        if (kind != TransactionKind.TOP_UP_CASH && kind != TransactionKind.TOP_UP_DIGITAL) {
+        if (kind != TransactionKind.TOPUP_CASH && kind != TransactionKind.TOPUP_DIGITAL) {
             return Result.failure(Exception("Invalid top-up kind"))
         }
-
+        val entryType = if (kind == TransactionKind.TOPUP_CASH) {
+            LedgerEntryType.CASH_MOVEMENT
+        } else {
+            LedgerEntryType.BALANCE_ENTRY
+        }
+        val cashAffectsExpectedCash = kind == TransactionKind.TOPUP_CASH
+        val paymentMethod = if (kind == TransactionKind.TOPUP_CASH) {
+            PaymentMethod.CASH
+        } else {
+            PaymentMethod.PAYPAL
+        }
         val request = CreateLedgerEntryRequest(
+            entryType = entryType.name,
             kind = kind.name,
             userId = userId,
-            amount = amount,  // Positive for adding
-            paymentMethod = if (kind == TransactionKind.TOP_UP_CASH) "CASH" else "INTERNAL_BALANCE",
+            amountCents = eurosToCents(amount),
+            cashAffectsExpectedCash = cashAffectsExpectedCash,
+            paymentMethod = paymentMethod.name,
             locationId = locationId
         )
         return when (val result = apiClient.createLedgerEntry(request)) {
@@ -87,12 +108,13 @@ class LedgerRepositoryImpl(
 
     override suspend fun recordUndo(originalEntryId: String, amount: Double, userId: String): Result<LedgerEntry> {
         val request = CreateLedgerEntryRequest(
-            kind = "PURCHASE",
+            entryType = LedgerEntryType.BALANCE_ENTRY.name,
+            kind = TransactionKind.ADJUSTMENT_BALANCE.name,
             userId = userId,
-            amount = amount,  // Opposite sign (positive to undo negative purchase)
-            paymentMethod = "INTERNAL_BALANCE",
-            isCompensating = true,
-            description = "Undo of entry $originalEntryId"
+            amountCents = eurosToCents(amount),
+            cashAffectsExpectedCash = false,
+            paymentMethod = PaymentMethod.PAYPAL.name,
+            note = "Undo of entry $originalEntryId"
         )
         return when (val result = apiClient.createLedgerEntry(request)) {
             is ApiResult.Success -> Result.success(result.data.toLedgerEntry())

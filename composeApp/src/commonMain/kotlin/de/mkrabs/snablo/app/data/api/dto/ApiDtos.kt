@@ -3,6 +3,7 @@ package de.mkrabs.snablo.app.data.api.dto
 import de.mkrabs.snablo.app.domain.model.LedgerEntry
 import de.mkrabs.snablo.app.domain.model.TransactionKind
 import de.mkrabs.snablo.app.domain.model.PaymentMethod
+import de.mkrabs.snablo.app.domain.model.LedgerEntryType
 import de.mkrabs.snablo.app.domain.model.User
 import de.mkrabs.snablo.app.domain.model.UserRole
 import kotlinx.serialization.Serializable
@@ -129,48 +130,54 @@ data class LocationPriceDto(
 @Serializable
 data class LedgerEntryDto(
     val id: String,
+    val entryType: String,
     val kind: String,
-    val userId: String,
-    val amount: Double,
-    val paymentMethod: String = "INTERNAL_BALANCE",
+    val userId: String? = null,
     val locationId: String? = null,
-    val catalogItemId: String? = null,
-    val priceSnapshot: Double? = null,
-    val description: String? = null,
+    val shelfId: String? = null,
+    val catalogItemIdSnapshot: String? = null,
+    val quantity: Int? = null,
+    val unitPriceCentsSnapshot: Int? = null,
+    val amountCents: Int,
+    val cashAffectsExpectedCash: Boolean,
+    val paymentMethod: String,
+    val note: String? = null,
     val created: String = "",
-    val createdBy: String = "",
-    val settledAt: String? = null,
-    val isCompensating: Boolean = false,
     val updated: String? = null
 ) {
     fun toLedgerEntry(): LedgerEntry = LedgerEntry(
         id = id,
-        kind = TransactionKind.valueOf(kind),
+        entryType = LedgerEntryType.fromApi(entryType),
+        kind = TransactionKind.fromApi(kind),
         userId = userId,
-        amount = amount,
-        paymentMethod = PaymentMethod.valueOf(paymentMethod),
         locationId = locationId,
-        catalogItemId = catalogItemId,
-        priceSnapshot = priceSnapshot,
-        description = description,
+        shelfId = shelfId,
+        catalogItemIdSnapshot = catalogItemIdSnapshot,
+        quantity = quantity,
+        unitPriceCentsSnapshot = unitPriceCentsSnapshot,
+        amountCents = amountCents,
+        cashAffectsExpectedCash = cashAffectsExpectedCash,
+        paymentMethod = PaymentMethod.fromApi(paymentMethod),
+        note = note,
         createdAt = created,
-        createdBy = createdBy,
-        settledAt = settledAt,
-        isCompensating = isCompensating
+        updatedAt = updated
     )
 }
 
 @Serializable
 data class CreateLedgerEntryRequest(
+    val entryType: String,
     val kind: String,
-    val userId: String,
-    val amount: Double,
-    val paymentMethod: String = "INTERNAL_BALANCE",
+    val userId: String? = null,
     val locationId: String? = null,
-    val catalogItemId: String? = null,
-    val priceSnapshot: Double? = null,
-    val description: String? = null,
-    val isCompensating: Boolean = false
+    val shelfId: String? = null,
+    val catalogItemIdSnapshot: String? = null,
+    val quantity: Int? = null,
+    val unitPriceCentsSnapshot: Int? = null,
+    val amountCents: Int,
+    val cashAffectsExpectedCash: Boolean,
+    val paymentMethod: String,
+    val note: String? = null
 )
 
 // ========== NFC Token =========

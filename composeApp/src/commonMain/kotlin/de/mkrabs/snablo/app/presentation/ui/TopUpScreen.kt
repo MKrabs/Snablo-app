@@ -19,7 +19,7 @@ fun TopUpScreen(
     onCancel: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedKind by remember { mutableStateOf(TransactionKind.TOP_UP_CASH) }
+    var selectedKind by remember { mutableStateOf(TransactionKind.TOPUP_CASH) }
     var amount by remember { mutableStateOf("") }
     var selectedLocation by remember { mutableStateOf(locations.firstOrNull()) }
 
@@ -43,19 +43,19 @@ fun TopUpScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
-                selected = selectedKind == TransactionKind.TOP_UP_CASH,
-                onClick = { selectedKind = TransactionKind.TOP_UP_CASH },
+                selected = selectedKind == TransactionKind.TOPUP_CASH,
+                onClick = { selectedKind = TransactionKind.TOPUP_CASH },
                 label = { Text("Cash") }
             )
             FilterChip(
-                selected = selectedKind == TransactionKind.TOP_UP_DIGITAL,
-                onClick = { selectedKind = TransactionKind.TOP_UP_DIGITAL },
+                selected = selectedKind == TransactionKind.TOPUP_DIGITAL,
+                onClick = { selectedKind = TransactionKind.TOPUP_DIGITAL },
                 label = { Text("Digital") }
             )
         }
 
         // Location selection (only for cash)
-        if (selectedKind == TransactionKind.TOP_UP_CASH) {
+        if (selectedKind == TransactionKind.TOPUP_CASH) {
             Text(
                 "Location",
                 style = MaterialTheme.typography.titleSmall,
@@ -152,7 +152,7 @@ fun TopUpScreen(
                     }
                 },
                 modifier = Modifier.weight(1f),
-                enabled = !uiState.isLoading && amount.isNotEmpty() && (selectedKind == TransactionKind.TOP_UP_DIGITAL || selectedLocation != null)
+                enabled = !uiState.isLoading && amount.isNotEmpty() && (selectedKind == TransactionKind.TOPUP_DIGITAL || selectedLocation != null)
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -169,4 +169,3 @@ fun TopUpScreen(
         }
     }
 }
-

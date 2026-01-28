@@ -84,6 +84,7 @@ class ConfirmPurchaseViewModel(
                     unitPrice = data.effectivePrice,
                     locationId = data.location.id,
                     catalogItemId = data.catalogItem.id,
+                    shelfId = data.slotId,
                     quantity = 1
                 )
                 val entry = result.getOrThrow()

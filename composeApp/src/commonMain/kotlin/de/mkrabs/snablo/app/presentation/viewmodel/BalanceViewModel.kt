@@ -36,7 +36,7 @@ class BalanceViewModel(
             try {
                 val result = ledgerRepository.getHistory(userId)
                 val entries = result.getOrThrow()
-                val balance = entries.sumOf { it.amount }
+                val balance = entries.sumOf { it.amountCents } / 100.0
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     balance = balance,
@@ -60,7 +60,17 @@ class BalanceViewModel(
         val history = _uiState.value.history
         val filter = _uiState.value.selectedFilterKind
         return if (filter != null) {
-            history.filter { it.kind == filter }
+            history.filter { entry ->
+                when (filter) {
+                    TransactionKind.PURCHASE_DIGITAL ->
+                        entry.kind == TransactionKind.PURCHASE_DIGITAL || entry.kind == TransactionKind.PURCHASE_CASH_LOGGED
+                    TransactionKind.TOPUP_DIGITAL ->
+                        entry.kind == TransactionKind.TOPUP_DIGITAL
+                    TransactionKind.TOPUP_CASH ->
+                        entry.kind == TransactionKind.TOPUP_CASH
+                    else -> entry.kind == filter
+                }
+            }
         } else {
             history
         }
@@ -70,4 +80,3 @@ class BalanceViewModel(
         _uiState.value = _uiState.value.copy(error = null)
     }
 }
-

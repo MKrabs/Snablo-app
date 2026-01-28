@@ -33,3 +33,11 @@ fun formatItemLabel(raw: String?): String {
     if (raw.isNullOrBlank()) return "—"
     return raw.trim()
 }
+
+fun eurosToCents(amount: Double): Int {
+    return (amount * 100.0).roundToInt()
+}
+
+fun centsToEuros(amountCents: Int?): Double? {
+    return amountCents?.let { it / 100.0 }
+}

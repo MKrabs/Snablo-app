@@ -33,7 +33,7 @@ class TopUpViewModel(
         locationId: String? = null,
         userId: String = ""  // Should be passed from caller
     ) {
-        if (kind != TransactionKind.TOP_UP_CASH && kind != TransactionKind.TOP_UP_DIGITAL) {
+        if (kind != TransactionKind.TOPUP_CASH && kind != TransactionKind.TOPUP_DIGITAL) {
             _uiState.value = _uiState.value.copy(error = "Invalid top-up kind")
             return
         }
@@ -43,7 +43,7 @@ class TopUpViewModel(
             return
         }
 
-        if (kind == TransactionKind.TOP_UP_CASH && locationId == null) {
+        if (kind == TransactionKind.TOPUP_CASH && locationId == null) {
             _uiState.value = _uiState.value.copy(error = "Location required for cash top-up")
             return
         }
@@ -80,4 +80,3 @@ class TopUpViewModel(
         _uiState.value = TopUpUiState()
     }
 }
-

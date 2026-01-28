@@ -99,6 +99,7 @@ fun HomeScreen(
                         userId = userId,
                         locationId = activePurchase.locationId,
                         catalogItemId = activePurchase.shelf.catalogItemId,
+                        shelfId = activePurchase.shelf.slotId,
                         unitPrice = price,
                         quantity = quantity
                     )

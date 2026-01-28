@@ -218,12 +218,12 @@ fun HistoryScreen(
                 label = { Text("All") }
             )
             FilterChip(
-                selected = uiState.selectedFilterKind == TransactionKind.PURCHASE,
-                onClick = { viewModel.setFilter(TransactionKind.PURCHASE) },
+                selected = uiState.selectedFilterKind == TransactionKind.PURCHASE_DIGITAL,
+                onClick = { viewModel.setFilter(TransactionKind.PURCHASE_DIGITAL) },
                 label = { Text("Purchases") }
             )
             FilterChip(
-                selected = uiState.selectedFilterKind?.name?.startsWith("TOP_UP") ?: false,
+                selected = uiState.selectedFilterKind?.name?.startsWith("TOPUP") ?: false,
                 onClick = { /* Would need multi-select */ },
                 label = { Text("Top-ups") }
             )
@@ -275,9 +275,9 @@ fun TransactionCard(entry: LedgerEntry) {
                 )
             }
             Text(
-                "${if (entry.amount > 0) "+" else ""}${formatPriceEu(entry.amount)}",
+                "${if (entry.amountCents > 0) "+" else ""}${formatPriceEu(entry.amountEuros)}",
                 style = MaterialTheme.typography.titleSmall,
-                color = if (entry.amount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                color = if (entry.amountCents > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         }
     }

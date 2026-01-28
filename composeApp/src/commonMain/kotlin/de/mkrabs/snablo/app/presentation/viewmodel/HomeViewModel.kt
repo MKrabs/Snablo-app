@@ -115,12 +115,14 @@ class HomeViewModel(
         userId: String,
         locationId: String,
         catalogItemId: String,
+        shelfId: String,
         unitPrice: Double,
         quantity: Int
     ): Result<Unit> {
         if (userId.isBlank()) return Result.failure(IllegalArgumentException("userId is blank"))
         if (locationId.isBlank()) return Result.failure(IllegalArgumentException("locationId is blank"))
         if (catalogItemId.isBlank()) return Result.failure(IllegalArgumentException("catalogItemId is blank"))
+        if (shelfId.isBlank()) return Result.failure(IllegalArgumentException("shelfId is blank"))
         if (quantity <= 0) return Result.failure(IllegalArgumentException("quantity must be > 0"))
 
         return ledgerRepository
@@ -129,6 +131,7 @@ class HomeViewModel(
                 unitPrice = unitPrice,
                 locationId = locationId,
                 catalogItemId = catalogItemId,
+                shelfId = shelfId,
                 quantity = quantity
             )
             .map { Unit }
