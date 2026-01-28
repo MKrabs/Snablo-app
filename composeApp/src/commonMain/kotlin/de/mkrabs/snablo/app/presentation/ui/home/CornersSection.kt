@@ -129,7 +129,7 @@ private fun CornerCard(
                 modifier = Modifier.height(240.dp)
             ) {
                 gridItems(items = corner.shelves.sortedBy { it.slotIndex }) { shelf ->
-                    SnackCard(name = shelf.itemName, price = shelf.price, imageUrl = shelf.imageUrl, inventoryCount = shelf.inventoryCount, onClick = { onShelfClick(corner.location.id, shelf.slotId) })
+                    SnackCard(name = shelf.slotId, price = shelf.price, imageUrl = shelf.imageUrl, inventoryCount = shelf.inventoryCount, onClick = { onShelfClick(corner.location.id, shelf.slotId) })
                 }
             }
         }

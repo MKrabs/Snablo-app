@@ -9,6 +9,17 @@ import de.mkrabs.snablo.app.domain.model.*
  */
 interface ShelfRepository {
     suspend fun getSlotMappings(locationId: String): Result<List<SlotMapping>>
+
+    /**
+     * Tries to fetch shelf slots with a resolved itemName/imageUrl.
+     *
+     * This is primarily for PocketBase schemas using `corners` + `shelves` where `shelves.catalogItemId`
+     * is a relation and needs `expand=catalogItemId` to get a human label.
+     *
+     * Returns empty list when the compatibility collections are not present.
+     */
+    suspend fun getResolvedShelfSlots(locationId: String): Result<List<ResolvedShelfSlot>>
+
     suspend fun getPrice(locationId: String, catalogItemId: String): Result<Double>
     suspend fun getSlotDetails(
         locationId: String,
@@ -47,7 +58,13 @@ class ShelfRepositoryImpl(
             }
 
             // Fallback 1: try the 'shelves' collection (some PocketBase schemas use this)
-            when (val shelvesResult = apiClient.getShelves(filter = "cornerId=\"$locationId\"")) {
+            // Use expand so we can resolve a human-friendly item name in the UI without additional queries.
+            when (
+                val shelvesResult = apiClient.getShelves(
+                    filter = "cornerId=\"$locationId\"",
+                    expand = "catalogItemId"
+                )
+            ) {
                 is ApiResult.Success -> {
                     val shelfItems = shelvesResult.data.items
                     if (shelfItems.isNotEmpty()) {
@@ -80,7 +97,12 @@ class ShelfRepositoryImpl(
                     if (corners.isNotEmpty()) {
                         val allShelves = mutableListOf<SlotMapping>()
                         for (corner in corners) {
-                            when (val sres = apiClient.getShelves(filter = "cornerId=\"${corner.id}\"")) {
+                            when (
+                                val sres = apiClient.getShelves(
+                                    filter = "cornerId=\"${corner.id}\"",
+                                    expand = "catalogItemId"
+                                )
+                            ) {
                                 is ApiResult.Success -> {
                                     allShelves += sres.data.items.map { s ->
                                         val created = s.created ?: s.createdAt ?: ""
@@ -109,6 +131,56 @@ class ShelfRepositoryImpl(
 
             // If nothing found, return empty list (not necessarily an error)
             Result.success(emptyList())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getResolvedShelfSlots(locationId: String): Result<List<ResolvedShelfSlot>> {
+        return try {
+            // Strategy:
+            // 1) Try shelves directly: filter by cornerId=locationId (some installs treat "location" as corner)
+            // 2) If empty, try corners for locationId and fetch shelves for each corner.
+            // In both cases use expand=catalogItemId to get the display name.
+
+            val directShelves = when (
+                val shelvesResult = apiClient.getShelves(
+                    filter = "cornerId=\"$locationId\"",
+                    expand = "catalogItemId"
+                )
+            ) {
+                is ApiResult.Success -> shelvesResult.data.items
+                else -> emptyList()
+            }
+
+            if (directShelves.isNotEmpty()) {
+                return Result.success(directShelves.toResolvedShelfSlots(logicalLocationId = locationId))
+            }
+
+            // Try corners -> shelves
+            val corners = when (val cornersResult = apiClient.getCorners(filter = "locationId=\"$locationId\"")) {
+                is ApiResult.Success -> cornersResult.data.items
+                else -> emptyList()
+            }
+
+            if (corners.isEmpty()) return Result.success(emptyList())
+
+            val allShelves = mutableListOf<de.mkrabs.snablo.app.data.api.dto.ShelfDto>()
+            for (corner in corners) {
+                when (
+                    val shelvesRes = apiClient.getShelves(
+                        filter = "cornerId=\"${corner.id}\"",
+                        expand = "catalogItemId"
+                    )
+                ) {
+                    is ApiResult.Success -> allShelves += shelvesRes.data.items
+                    else -> {
+                        // continue
+                    }
+                }
+            }
+
+            Result.success(allShelves.toResolvedShelfSlots(logicalLocationId = locationId))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -178,5 +250,27 @@ class ShelfRepositoryImpl(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+}
+
+internal fun List<de.mkrabs.snablo.app.data.api.dto.ShelfDto>.toResolvedShelfSlots(
+    logicalLocationId: String
+): List<ResolvedShelfSlot> {
+    return map { s ->
+        // If expanded, prefer that. Otherwise fall back to ID formatting.
+        val expandedItem = s.expand?.catalogItemId
+        val itemName = expandedItem?.name ?: de.mkrabs.snablo.app.util.formatItemLabel(s.catalogItemId)
+        val imageUrl = expandedItem?.imageUrl ?: expandedItem?.img
+
+        ResolvedShelfSlot(
+            slotId = s.id,
+            // We treat the caller's locationId as the "logical" location. (Corner/location mapping differs by schema.)
+            locationId = logicalLocationId,
+            slotIndex = s.orderIndex,
+            catalogItemId = s.catalogItemId,
+            itemName = itemName,
+            imageUrl = imageUrl,
+            inventoryCount = s.stockCount
+        )
     }
 }

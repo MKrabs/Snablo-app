@@ -235,14 +235,23 @@ class PocketBaseClient(
 
     // ========== Shelves (compat) ==========
 
-    suspend fun getShelves(page: Int = 1, perPage: Int = 50, filter: String? = null): ApiResult<PaginatedResponse<ShelfDto>> {
+    suspend fun getShelves(
+        page: Int = 1,
+        perPage: Int = 50,
+        filter: String? = null,
+        expand: String? = null,
+        fields: String? = null
+    ): ApiResult<PaginatedResponse<ShelfDto>> {
         return try {
             val url = buildString {
                 append(PocketBaseConfig.shelvesUrl)
                 append("?page=$page&perPage=$perPage")
                 if (!filter.isNullOrBlank()) append("&filter=${filter}")
+                if (!expand.isNullOrBlank()) append("&expand=${expand}")
+                if (!fields.isNullOrBlank()) append("&fields=${fields}")
             }
-            val response = httpClient.get(url) { contentType(ContentType.Application.Json) }.body<PaginatedResponse<ShelfDto>>()
+            val response = httpClient.get(url) { contentType(ContentType.Application.Json) }
+                .body<PaginatedResponse<ShelfDto>>()
             ApiResult.Success(response)
         } catch (e: CancellationException) {
             throw e
@@ -253,14 +262,23 @@ class PocketBaseClient(
 
     // ========== Corners (compat) ==========
 
-    suspend fun getCorners(page: Int = 1, perPage: Int = 50, filter: String? = null): ApiResult<PaginatedResponse<CornerDto>> {
+    suspend fun getCorners(
+        page: Int = 1,
+        perPage: Int = 50,
+        filter: String? = null,
+        expand: String? = null,
+        fields: String? = null
+    ): ApiResult<PaginatedResponse<CornerDto>> {
         return try {
             val url = buildString {
                 append(PocketBaseConfig.cornersUrl)
                 append("?page=$page&perPage=$perPage")
                 if (!filter.isNullOrBlank()) append("&filter=${filter}")
+                if (!expand.isNullOrBlank()) append("&expand=${expand}")
+                if (!fields.isNullOrBlank()) append("&fields=${fields}")
             }
-            val response = httpClient.get(url) { contentType(ContentType.Application.Json) }.body<PaginatedResponse<CornerDto>>()
+            val response = httpClient.get(url) { contentType(ContentType.Application.Json) }
+                .body<PaginatedResponse<CornerDto>>()
             ApiResult.Success(response)
         } catch (e: CancellationException) {
             throw e

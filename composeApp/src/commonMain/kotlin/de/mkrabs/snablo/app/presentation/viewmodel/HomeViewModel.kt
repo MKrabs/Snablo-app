@@ -151,6 +151,31 @@ class HomeViewModel(
         location: Location,
         itemById: Map<String, CatalogItem>
     ): CornerUi {
+        // Prefer resolved shelf slots (PocketBase `expand=catalogItemId`) to avoid cryptic IDs in UI.
+        val resolvedSlots = shelfRepository.getResolvedShelfSlots(location.id).getOrElse { emptyList() }
+        if (resolvedSlots.isNotEmpty()) {
+            val shelfUis = coroutineScope {
+                resolvedSlots
+                    .sortedBy { it.slotIndex }
+                    .map { slot ->
+                        async {
+                            val price = shelfRepository.getPrice(location.id, slot.catalogItemId).getOrNull()
+                            CornerShelfSlotUi(
+                                slotId = slot.slotId,
+                                slotIndex = slot.slotIndex,
+                                catalogItemId = slot.catalogItemId,
+                                itemName = slot.itemName,
+                                price = price,
+                                inventoryCount = slot.inventoryCount,
+                                imageUrl = slot.imageUrl
+                            )
+                        }
+                    }
+                    .awaitAll()
+            }
+            return CornerUi(location = location, shelves = shelfUis)
+        }
+
         val slotMappings = shelfRepository.getSlotMappings(location.id).getOrElse { emptyList() }
         if (slotMappings.isEmpty()) {
             // If a location has no shelves, we still may want to show the location itself.

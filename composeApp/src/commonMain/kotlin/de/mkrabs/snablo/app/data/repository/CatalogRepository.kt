@@ -86,11 +86,18 @@ class CatalogRepositoryImpl(
         }
 
         // Fallback 2: derive locations from shelves grouping by cornerId
-        when (val shelvesRes = apiClient.getShelves(page = 1, perPage = 200)) {
+        when (
+            val shelvesRes = apiClient.getShelves(
+                page = 1,
+                perPage = 200,
+                // we only need cornerId here
+                fields = "cornerId"
+            )
+        ) {
             is ApiResult.Success -> {
                 val shelfItems = shelvesRes.data.items
                 if (shelfItems.isNotEmpty()) {
-                    val ids = shelfItems.mapNotNull { it.cornerId }.distinct()
+                    val ids = shelfItems.map { it.cornerId }.distinct()
                     val inferred = ids.map { id ->
                         val short = if (id.length > 6) id.take(6) else id
                         Location(

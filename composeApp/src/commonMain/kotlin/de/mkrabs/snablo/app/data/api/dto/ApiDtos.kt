@@ -217,6 +217,18 @@ data class ErrorResponse(
  * These DTOs provide compatibility with the API docs provided by the user.
  */
 @Serializable
+data class ShelfExpandDto(
+    // PocketBase returns expanded relation under the relation field key
+    val catalogItemId: CatalogItemDto? = null,
+    val cornerId: CornerDto? = null
+)
+
+@Serializable
+data class CornerExpandDto(
+    val locationId: LocationDto? = null
+)
+
+@Serializable
 data class ShelfDto(
     val id: String,
     // relation to corner record
@@ -236,7 +248,9 @@ data class ShelfDto(
     val created: String? = null,
     val updated: String? = null,
     val createdAt: String? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    // PocketBase expanded relations payload
+    val expand: ShelfExpandDto? = null
 ) {
     // Helper to convert cents -> euro value when available
     fun priceEuros(): Double? = priceCents?.let { it / 100.0 }
@@ -253,5 +267,6 @@ data class CornerDto(
     val created: String? = null,
     val updated: String? = null,
     val createdAt: String? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    val expand: CornerExpandDto? = null
 )
