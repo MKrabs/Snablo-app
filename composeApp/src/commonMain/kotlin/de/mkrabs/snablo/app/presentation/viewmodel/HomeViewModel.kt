@@ -44,6 +44,7 @@ data class CornerUi(
 data class HomeUiState(
     val isLoading: Boolean = false,
     val balance: Double = 0.0,
+    val isBalanceLoading: Boolean = false,
     val recentTransactions: List<LedgerEntry> = emptyList(),
 
     // "Corners" (locations) section
@@ -75,13 +76,14 @@ class HomeViewModel(
 
     suspend fun refreshBalanceFromApi(userId: String) {
         if (userId.isBlank()) return
+        _uiState.value = _uiState.value.copy(isBalanceLoading = true)
         when (val result = apiClient.getUserById(userId)) {
             is de.mkrabs.snablo.app.data.api.ApiResult.Success -> {
                 val user = result.data.toUser()
-                _uiState.value = _uiState.value.copy(balance = user.globalBalance)
+                _uiState.value = _uiState.value.copy(balance = user.globalBalance, isBalanceLoading = false)
             }
             else -> {
-                // ignore balance refresh failure for now
+                _uiState.value = _uiState.value.copy(isBalanceLoading = false)
             }
         }
     }
@@ -100,14 +102,21 @@ class HomeViewModel(
         val newBalance = current + amountEuro.toDouble()
         val newBalanceCents = (newBalance * 100).toInt()
 
+        _uiState.value = _uiState.value.copy(isBalanceLoading = true)
         return when (val upd = apiClient.updateUser(userId, de.mkrabs.snablo.app.data.api.dto.UpdateUserRequest(balanceCents = newBalanceCents))) {
             is de.mkrabs.snablo.app.data.api.ApiResult.Success -> {
                 // After update, load again to sync
                 refreshBalanceFromApi(userId)
                 Result.success(Unit)
             }
-            is de.mkrabs.snablo.app.data.api.ApiResult.Error -> Result.failure(Exception(upd.message))
-            else -> Result.failure(Exception("Unknown error"))
+            is de.mkrabs.snablo.app.data.api.ApiResult.Error -> {
+                _uiState.value = _uiState.value.copy(isBalanceLoading = false)
+                Result.failure(Exception(upd.message))
+            }
+            else -> {
+                _uiState.value = _uiState.value.copy(isBalanceLoading = false)
+                Result.failure(Exception("Unknown error"))
+            }
         }
     }
 
@@ -116,6 +125,7 @@ class HomeViewModel(
             _uiState.value = _uiState.value.copy(
                 isLoading = if (!isRefresh) true else _uiState.value.isLoading,
                 isRefreshing = if (isRefresh) true else _uiState.value.isRefreshing,
+                isBalanceLoading = true,
                 error = null
             )
             try {
@@ -169,6 +179,7 @@ class HomeViewModel(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
+                    isBalanceLoading = false,
                     balance = _uiState.value.balance, // keep balance loaded from API
                     recentTransactions = emptyList(),
                     corners = corners,
@@ -180,6 +191,7 @@ class HomeViewModel(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
+                    isBalanceLoading = false,
                     error = e.message ?: "Failed to load dashboard"
                 )
             }

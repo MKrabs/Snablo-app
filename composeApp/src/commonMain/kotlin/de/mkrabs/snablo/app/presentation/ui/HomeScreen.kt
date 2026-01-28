@@ -87,6 +87,7 @@ fun HomeScreen(
                 item {
                     BalanceHeaderCard(
                         balance = uiState.balance,
+                        isLoading = uiState.isBalanceLoading,
                         onTopUp = { showTopUpDialog = true },
                         onProfile = onProfile
                     )
