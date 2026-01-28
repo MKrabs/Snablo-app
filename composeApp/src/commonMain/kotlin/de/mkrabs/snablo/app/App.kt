@@ -54,7 +54,7 @@ fun App() {
 
     // ViewModels (stable for the life of this composition)
     val authViewModel = remember { AuthViewModel(authService) }
-    val homeViewModel = remember { HomeViewModel(ledgerRepository, shelfRepository, catalogRepository) }
+    val homeViewModel = remember { HomeViewModel(ledgerRepository, shelfRepository, catalogRepository, apiClient = apiClient) }
     val shelfViewModel = remember { ShelfViewModel(catalogRepository, shelfRepository) }
 
     // Navigation state: saveable so it survives configuration changes / window recreation where supported.

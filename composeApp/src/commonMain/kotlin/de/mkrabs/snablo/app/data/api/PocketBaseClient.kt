@@ -286,4 +286,135 @@ class PocketBaseClient(
             ApiResult.Error(code = 500, message = "Failed to fetch corners", exception = e)
         }
     }
+
+    // ========== Users ==========
+
+    suspend fun getUsersList(
+        page: Int = 1,
+        perPage: Int = 30,
+        sort: String? = null,
+        filter: String? = null,
+        expand: String? = null,
+        fields: String? = null,
+        skipTotal: Boolean? = null
+    ): ApiResult<PaginatedResponse<UserDto>> {
+        return try {
+            val headers = getAuthHeader()
+            val response = httpClient.get(PocketBaseConfig.usersUrl) {
+                headers.forEach { (k, v) -> header(k, v) }
+                contentType(ContentType.Application.Json)
+
+                parameter("page", page)
+                parameter("perPage", perPage)
+                if (!sort.isNullOrBlank()) parameter("sort", sort)
+                if (!filter.isNullOrBlank()) parameter("filter", filter)
+                if (!expand.isNullOrBlank()) parameter("expand", expand)
+                if (!fields.isNullOrBlank()) parameter("fields", fields)
+                if (skipTotal != null) parameter("skipTotal", skipTotal)
+            }.body<PaginatedResponse<UserDto>>()
+            ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 500, message = "Failed to fetch users: ${e.message}", exception = e)
+        }
+    }
+
+    suspend fun getUsersFullList(
+        sort: String? = null,
+        filter: String? = null,
+        expand: String? = null,
+        fields: String? = null
+    ): ApiResult<List<UserDto>> {
+        return try {
+            val all = mutableListOf<UserDto>()
+            var page = 1
+            val perPage = 200
+            while (true) {
+                val pageResult = getUsersList(
+                    page = page,
+                    perPage = perPage,
+                    sort = sort,
+                    filter = filter,
+                    expand = expand,
+                    fields = fields,
+                    skipTotal = true
+                )
+                when (pageResult) {
+                    is ApiResult.Success -> {
+                        val items = pageResult.data.items
+                        all.addAll(items)
+                        if (items.size < perPage) break
+                        page++
+                    }
+                    is ApiResult.Error -> return pageResult
+                    else -> return ApiResult.Error(code = 500, message = "Unknown error")
+                }
+            }
+            ApiResult.Success(all)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 500, message = "Failed to fetch users full list: ${e.message}", exception = e)
+        }
+    }
+
+    suspend fun getFirstUser(
+        filter: String,
+        expand: String? = null,
+        fields: String? = null
+    ): ApiResult<UserDto> {
+        // PocketBase JS SDK uses skipTotal=true by default for getFirstListItem.
+        // Equivalent: request with perPage=1 and return first item.
+        return when (
+            val list = getUsersList(
+                page = 1,
+                perPage = 1,
+                filter = filter,
+                expand = expand,
+                fields = fields,
+                skipTotal = true
+            )
+        ) {
+            is ApiResult.Success -> {
+                val first = list.data.items.firstOrNull()
+                if (first != null) ApiResult.Success(first) else ApiResult.Error(404, "No user found")
+            }
+            is ApiResult.Error -> list
+            else -> ApiResult.Error(500, "Unknown error")
+        }
+    }
+
+    suspend fun updateUser(userId: String, request: UpdateUserRequest): ApiResult<UserDto> {
+        return try {
+            val headers = getAuthHeader()
+            val response = httpClient.patch("${PocketBaseConfig.usersUrl}/$userId") {
+                headers.forEach { (k, v) -> header(k, v) }
+                contentType(ContentType.Application.Json)
+                setBody<UpdateUserRequest>(request)
+            }.body<UserDto>()
+            ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 500, message = "Failed to update user: ${e.message}", exception = e)
+        }
+    }
+
+    suspend fun getUserById(userId: String, expand: String? = null, fields: String? = null): ApiResult<UserDto> {
+        return try {
+            val headers = getAuthHeader()
+            val response = httpClient.get("${PocketBaseConfig.usersUrl}/$userId") {
+                headers.forEach { (k, v) -> header(k, v) }
+                contentType(ContentType.Application.Json)
+                if (!expand.isNullOrBlank()) parameter("expand", expand)
+                if (!fields.isNullOrBlank()) parameter("fields", fields)
+            }.body<UserDto>()
+            ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 500, message = "Failed to fetch user: ${e.message}", exception = e)
+        }
+    }
 }

@@ -32,23 +32,40 @@ data class RefreshResponse(
 
 @Serializable
 data class UserDto(
+    // PocketBase users record fields
+    val collectionId: String? = null,
+    val collectionName: String? = null,
+
     val id: String,
     val email: String,
+    val emailVisibility: Boolean? = null,
+    val verified: Boolean? = null,
+
     val name: String,
+    val avatar: String? = null,
     val role: String = "USER",
+
+    // New spec: cents-based balance
+    val balanceCents: Int? = null,
+
+    // Backwards compatibility with older API field
     val globalBalance: Double = 0.0,
+
     val created: String = "",
     val updated: String? = null
 ) {
-    fun toUser(): User = User(
-        id = id,
-        email = email,
-        name = name,
-        role = if (role == "ADMIN") UserRole.ADMIN else UserRole.USER,
-        globalBalance = globalBalance,
-        createdAt = created,
-        updatedAt = updated
-    )
+    fun toUser(): User {
+        val resolvedBalance = balanceCents?.let { it / 100.0 } ?: globalBalance
+        return User(
+            id = id,
+            email = email,
+            name = name,
+            role = if (role.equals("ADMIN", ignoreCase = true)) UserRole.ADMIN else UserRole.USER,
+            globalBalance = resolvedBalance,
+            createdAt = created,
+            updatedAt = updated
+        )
+    }
 }
 
 // ========== Catalog =========

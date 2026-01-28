@@ -1,10 +1,7 @@
 package de.mkrabs.snablo.app.presentation.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DrawerValue
@@ -14,6 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.mkrabs.snablo.app.presentation.ui.home.BalanceHeaderCard
@@ -23,6 +24,8 @@ import de.mkrabs.snablo.app.presentation.ui.home.RecentTransactionsHeader
 import de.mkrabs.snablo.app.presentation.ui.home.PullRefreshLayout
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
+import de.mkrabs.snablo.app.presentation.ui.home.TopUpDialog
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,12 +41,29 @@ fun HomeScreen(
     onOpenProfile: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    var showTopUpDialog by rememberSaveable { mutableStateOf(false) }
 
     // load initial data
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             viewModel.loadForUser(userId)
         }
+    }
+
+    if (showTopUpDialog) {
+        TopUpDialog(
+            onDismiss = { showTopUpDialog = false },
+            onConfirm = { amountEuro ->
+                showTopUpDialog = false
+                scope.launch {
+                    viewModel.topUpBalance(userId = userId, amountEuro = amountEuro)
+                    viewModel.loadForUser(userId)
+                }
+                onTopUp()
+            }
+        )
     }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -67,7 +87,7 @@ fun HomeScreen(
                 item {
                     BalanceHeaderCard(
                         balance = uiState.balance,
-                        onTopUp = onTopUp,
+                        onTopUp = { showTopUpDialog = true },
                         onProfile = onProfile
                     )
                 }
