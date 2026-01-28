@@ -62,7 +62,7 @@ fun BalanceHeaderCard(
                         )
 
                         val base = MaterialTheme.colorScheme.surfaceVariant
-                        val highlight = MaterialTheme.colorScheme.surface
+                        val highlight = androidx.compose.ui.graphics.Color.LightGray
 
                         val shimmerBrush = Brush.linearGradient(
                             colors = listOf(
