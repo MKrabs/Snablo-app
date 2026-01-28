@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TopUpDialog(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: (amountEuro: Int) -> Unit
 ) {
     val maxAmountEuro = 99
 
@@ -130,7 +130,7 @@ fun TopUpDialog(
                 TextButton(
                     onClick = {
                         focusManager.clearFocus(force = true)
-                        onConfirm()
+                        onConfirm(amountEuro)
                     },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {

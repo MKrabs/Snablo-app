@@ -52,7 +52,8 @@ fun HomeScreen(
     if (showTopUpDialog) {
         TopUpDialog(
             onDismiss = { showTopUpDialog = false },
-            onConfirm = {
+            onConfirm = { amountEuro ->
+                viewModel.addBalance(amountEuro)
                 showTopUpDialog = false
                 onTopUp()
             }

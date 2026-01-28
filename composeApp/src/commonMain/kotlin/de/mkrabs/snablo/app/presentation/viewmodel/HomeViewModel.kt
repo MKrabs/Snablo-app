@@ -72,6 +72,11 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    fun addBalance(amountEuro: Int) {
+        if (amountEuro <= 0) return
+        _uiState.value = _uiState.value.copy(balance = _uiState.value.balance + amountEuro.toDouble())
+    }
+
     fun loadForUser(userId: String, locationId: String? = null, isRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
