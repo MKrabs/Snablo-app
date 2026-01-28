@@ -34,20 +34,25 @@ fun TopUpDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val maxAmountEuro = 99
+
     // Defaultmäßig 10€ und +/- in 1€ Schritten
     var amountEuro by remember { mutableIntStateOf(10) }
 
-    // Textfield-State (nur Zahl). Wir halten Selection mit TextFieldValue,
-    // damit wir beim Fokus alles markieren können.
+    // Flag muss existieren (wurde in onValueChange referenziert)
+    var selectAllOnNextKey by remember { mutableStateOf(false) }
+
+    // Textfield-State (nur Zahl). Beim Öffnen NICHT markiert (Cursor am Ende).
     var amountText by remember {
-        mutableStateOf(TextFieldValue(text = amountEuro.toString(), selection = TextRange(0, amountEuro.toString().length)))
+        val initial = amountEuro.toString()
+        mutableStateOf(TextFieldValue(text = initial, selection = TextRange(initial.length)))
     }
 
     // Wenn amountEuro z.B. über +/- geändert wird, Text aktualisieren.
     LaunchedEffect(amountEuro) {
         val newText = amountEuro.toString()
         if (amountText.text != newText) {
-            amountText = amountText.copy(text = newText, selection = TextRange(0, newText.length))
+            amountText = amountText.copy(text = newText, selection = TextRange(newText.length))
         }
     }
 
@@ -77,18 +82,22 @@ fun TopUpDialog(
                         OutlinedTextField(
                             value = amountText,
                             onValueChange = { newValue ->
-                                // Nur Ziffern zulassen
+                                // Sobald der User tippt, soll NICHT erneut auto-selektiert werden
+                                selectAllOnNextKey = false
+
                                 val digitsOnly = newValue.text.filter { it.isDigit() }
                                 val normalized = if (digitsOnly.isEmpty()) "0" else digitsOnly.trimStart('0').ifEmpty { "0" }
 
+                                val parsed = normalized.toIntOrNull() ?: 0
+                                val clamped = parsed.coerceIn(0, maxAmountEuro)
+                                val clampedText = clamped.toString()
+
                                 amountText = newValue.copy(
-                                    text = normalized,
-                                    // Cursor/Selection auf gültige Range clampen
-                                    selection = TextRange(normalized.length)
+                                    text = clampedText,
+                                    selection = TextRange(clampedText.length)
                                 )
 
-                                // int-State synchron halten
-                                amountEuro = normalized.toIntOrNull() ?: 0
+                                amountEuro = clamped
                             },
                             singleLine = true,
                             textStyle = MaterialTheme.typography.headlineMedium,
@@ -99,9 +108,11 @@ fun TopUpDialog(
                             modifier = Modifier
                                 .fillMaxWidth(0.35f)
                                 .onFocusChanged { state ->
+                                    // Beim Fokussieren noch NICHT selektieren.
+                                    // Erst beim nächsten tatsächlichen Tippen (dazu wird das Flag gesetzt).
+                                    selectAllOnNextKey = state.isFocused
                                     if (state.isFocused) {
-                                        // Alles markieren, damit die erste Eingabe überschreibt
-                                        amountText = amountText.copy(selection = TextRange(0, amountText.text.length))
+                                        amountText = amountText.copy(selection = TextRange(amountText.text.length))
                                     }
                                 },
                             colors = OutlinedTextFieldDefaults.colors()
@@ -110,7 +121,7 @@ fun TopUpDialog(
                         Text("€", style = MaterialTheme.typography.headlineMedium)
                     }
 
-                    IconButton(onClick = { amountEuro += 1 }) {
+                    IconButton(onClick = { if (amountEuro < maxAmountEuro) amountEuro += 1 }) {
                         Text("+", style = MaterialTheme.typography.headlineMedium)
                     }
                 }
