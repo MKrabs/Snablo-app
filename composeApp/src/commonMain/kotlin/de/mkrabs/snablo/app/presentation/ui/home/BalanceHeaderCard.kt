@@ -8,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import de.mkrabs.snablo.app.util.formatPriceEu
 
@@ -46,37 +45,45 @@ fun BalanceHeaderCard(
                 Text("Balance", style = MaterialTheme.typography.labelMedium)
 
                 Box(
-                    modifier = Modifier
-                        .height(balanceRowHeight),
+                    modifier = Modifier.height(balanceRowHeight),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     if (isLoading) {
                         val transition = rememberInfiniteTransition(label = "balanceShimmer")
-                        val alpha = transition.animateFloat(
-                            initialValue = 0.35f,
-                            targetValue = 0.9f,
+                        // Animiert den "Lichtstreifen" horizontal über den Skeleton-Balken.
+                        val shimmerX = transition.animateFloat(
+                            initialValue = -220f,
+                            targetValue = 220f,
                             animationSpec = infiniteRepeatable(
-                                animation = tween(durationMillis = 750),
-                                repeatMode = RepeatMode.Reverse
+                                animation = tween(durationMillis = 900),
+                                repeatMode = RepeatMode.Restart
                             ),
-                            label = "balanceAlpha"
+                            label = "shimmerX"
+                        )
+
+                        val base = MaterialTheme.colorScheme.surfaceVariant
+                        val highlight = MaterialTheme.colorScheme.surface
+
+                        val shimmerBrush = Brush.linearGradient(
+                            colors = listOf(
+                                base,
+                                highlight,
+                                base
+                            ),
+                            start = androidx.compose.ui.geometry.Offset(shimmerX.value - 140f, 0f),
+                            end = androidx.compose.ui.geometry.Offset(shimmerX.value + 140f, 0f)
                         )
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp
-                            )
                             Box(
                                 modifier = Modifier
                                     .height(30.dp)
-                                    .width(110.dp)
-                                    .alpha(alpha.value)
+                                    .width(140.dp)
                                     .background(
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        brush = shimmerBrush,
                                         shape = RoundedCornerShape(10.dp)
                                     )
                             )
