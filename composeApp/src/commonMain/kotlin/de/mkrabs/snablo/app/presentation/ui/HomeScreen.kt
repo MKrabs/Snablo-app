@@ -14,6 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.mkrabs.snablo.app.presentation.ui.home.BalanceHeaderCard
@@ -23,6 +26,7 @@ import de.mkrabs.snablo.app.presentation.ui.home.RecentTransactionsHeader
 import de.mkrabs.snablo.app.presentation.ui.home.PullRefreshLayout
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
+import de.mkrabs.snablo.app.presentation.ui.home.TopUpDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,11 +43,23 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    var showTopUpDialog by rememberSaveable { mutableStateOf(false) }
+
     // load initial data
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             viewModel.loadForUser(userId)
         }
+    }
+
+    if (showTopUpDialog) {
+        TopUpDialog(
+            onDismiss = { showTopUpDialog = false },
+            onConfirm = {
+                showTopUpDialog = false
+                onTopUp()
+            }
+        )
     }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -67,7 +83,7 @@ fun HomeScreen(
                 item {
                     BalanceHeaderCard(
                         balance = uiState.balance,
-                        onTopUp = onTopUp,
+                        onTopUp = { showTopUpDialog = true },
                         onProfile = onProfile
                     )
                 }
