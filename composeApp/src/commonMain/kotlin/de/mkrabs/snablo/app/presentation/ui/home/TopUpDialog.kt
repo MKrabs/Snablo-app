@@ -34,7 +34,7 @@ fun TopUpDialog(
     onDismiss: () -> Unit,
     onConfirm: (amountEuro: Int) -> Unit
 ) {
-    val maxAmountEuro = 99
+    val maxAmountEuro = 100
 
     // Defaultmäßig 10€ und +/- in 1€ Schritten
     var amountEuro by remember { mutableIntStateOf(10) }
