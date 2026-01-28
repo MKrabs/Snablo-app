@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -20,9 +21,11 @@ import androidx.compose.ui.unit.dp
 import de.mkrabs.snablo.app.presentation.ui.home.BalanceHeaderCard
 import de.mkrabs.snablo.app.presentation.ui.home.CornersSection
 import de.mkrabs.snablo.app.presentation.ui.home.HomeSideDrawer
+import de.mkrabs.snablo.app.presentation.ui.home.PurchaseDialog
 import de.mkrabs.snablo.app.presentation.ui.home.RecentTransactionsHeader
 import de.mkrabs.snablo.app.presentation.ui.home.PullRefreshLayout
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
+import de.mkrabs.snablo.app.presentation.viewmodel.CornerShelfSlotUi
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
 import de.mkrabs.snablo.app.presentation.ui.home.TopUpDialog
 import kotlinx.coroutines.launch
@@ -44,6 +47,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     var showTopUpDialog by rememberSaveable { mutableStateOf(false) }
+    var purchaseDialogState by remember { mutableStateOf<PurchaseDialogState?>(null) }
+    var purchaseError by remember { mutableStateOf<String?>(null) }
+    var isPurchasing by remember { mutableStateOf(false) }
 
     // load initial data
     LaunchedEffect(userId) {
@@ -62,6 +68,49 @@ fun HomeScreen(
                     viewModel.loadForUser(userId)
                 }
                 onTopUp()
+            }
+        )
+    }
+
+    val activePurchase = purchaseDialogState
+    if (activePurchase != null) {
+        PurchaseDialog(
+            itemName = activePurchase.shelf.itemName,
+            imageUrl = activePurchase.shelf.imageUrl,
+            price = activePurchase.shelf.price,
+            inventoryCount = activePurchase.shelf.inventoryCount,
+            currentBalance = uiState.balance,
+            isSubmitting = isPurchasing,
+            errorMessage = purchaseError,
+            onDismiss = {
+                purchaseDialogState = null
+                purchaseError = null
+                isPurchasing = false
+            },
+            onConfirm = { quantity ->
+                val price = activePurchase.shelf.price
+                if (price == null) {
+                    purchaseError = "Missing price"
+                    return@PurchaseDialog
+                }
+                isPurchasing = true
+                scope.launch {
+                    val result = viewModel.purchaseItem(
+                        userId = userId,
+                        locationId = activePurchase.locationId,
+                        catalogItemId = activePurchase.shelf.catalogItemId,
+                        unitPrice = price,
+                        quantity = quantity
+                    )
+                    if (result.isSuccess) {
+                        purchaseDialogState = null
+                        purchaseError = null
+                    } else {
+                        purchaseError = result.exceptionOrNull()?.message ?: "Purchase failed"
+                    }
+                    viewModel.loadForUser(userId, locationId = activePurchase.locationId, isRefresh = true)
+                    isPurchasing = false
+                }
             }
         )
     }
@@ -102,7 +151,19 @@ fun HomeScreen(
 
                     CornersSection(
                         corners = cornersToShow,
-                        onShelfClick = onSlotClick,
+                        onShelfClick = { locationId, slotId ->
+                            val shelf = uiState.corners
+                                .firstOrNull { it.location.id == locationId }
+                                ?.shelves
+                                ?.firstOrNull { it.slotId == slotId }
+                            if (shelf != null) {
+                                purchaseDialogState = PurchaseDialogState(locationId, shelf)
+                                purchaseError = null
+                                isPurchasing = false
+                            } else {
+                                onSlotClick(locationId, slotId)
+                            }
+                        },
                         locationsDebugText = uiState.locationsDebugText
                     )
                 }
@@ -118,3 +179,8 @@ fun HomeScreen(
         }
     }
 }
+
+private data class PurchaseDialogState(
+    val locationId: String,
+    val shelf: CornerShelfSlotUi
+)

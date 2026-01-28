@@ -157,7 +157,12 @@ fun SnackCard(name: String, price: Double?, imageUrl: String?, inventoryCount: I
         .clickable { onClick() }) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
             // RemoteImage will render a platform-appropriate image or placeholder (same package)
-            RemoteImage(imageUrl = imageUrl, modifier = Modifier.size(56.dp))
+            RemoteImage(
+                imageUrl = imageUrl,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(28.dp))
+            )
             Spacer(modifier = Modifier.height(6.dp))
             Text(text = formatItemLabel(name), style = MaterialTheme.typography.bodySmall, maxLines = 2)
             Spacer(modifier = Modifier.height(6.dp))

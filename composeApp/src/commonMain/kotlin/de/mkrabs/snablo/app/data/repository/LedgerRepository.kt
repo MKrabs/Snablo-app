@@ -11,9 +11,10 @@ import de.mkrabs.snablo.app.domain.model.*
 interface LedgerRepository {
     suspend fun recordPurchase(
         userId: String,
-        price: Double,
+        unitPrice: Double,
         locationId: String,
-        catalogItemId: String
+        catalogItemId: String,
+        quantity: Int = 1
     ): Result<LedgerEntry>
 
     suspend fun recordTopUp(
@@ -33,18 +34,25 @@ class LedgerRepositoryImpl(
 ) : LedgerRepository {
     override suspend fun recordPurchase(
         userId: String,
-        price: Double,
+        unitPrice: Double,
         locationId: String,
-        catalogItemId: String
+        catalogItemId: String,
+        quantity: Int
     ): Result<LedgerEntry> {
+        if (quantity <= 0) {
+            return Result.failure(IllegalArgumentException("Quantity must be greater than 0"))
+        }
+        val totalPrice = unitPrice * quantity
+        val description = if (quantity > 1) "Qty: $quantity" else null
         val request = CreateLedgerEntryRequest(
             kind = "PURCHASE",
             userId = userId,
-            amount = -price,  // Negative for spending
+            amount = -totalPrice,  // Negative for spending
             paymentMethod = "INTERNAL_BALANCE",
             locationId = locationId,
             catalogItemId = catalogItemId,
-            priceSnapshot = price
+            priceSnapshot = unitPrice,
+            description = description
         )
         return when (val result = apiClient.createLedgerEntry(request)) {
             is ApiResult.Success -> Result.success(result.data.toLedgerEntry())
@@ -104,4 +112,3 @@ class LedgerRepositoryImpl(
         }
     }
 }
-

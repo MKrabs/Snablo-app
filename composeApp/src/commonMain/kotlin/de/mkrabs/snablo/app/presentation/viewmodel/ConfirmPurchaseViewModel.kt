@@ -81,9 +81,10 @@ class ConfirmPurchaseViewModel(
             try {
                 val result = ledgerRepository.recordPurchase(
                     userId = userId,
-                    price = data.effectivePrice,
+                    unitPrice = data.effectivePrice,
                     locationId = data.location.id,
-                    catalogItemId = data.catalogItem.id
+                    catalogItemId = data.catalogItem.id,
+                    quantity = 1
                 )
                 val entry = result.getOrThrow()
                 pendingUndo = PendingUndo(
@@ -170,4 +171,3 @@ class ConfirmPurchaseViewModel(
         pendingUndo = null
     }
 }
-

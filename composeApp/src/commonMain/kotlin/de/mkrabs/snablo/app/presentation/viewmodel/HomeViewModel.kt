@@ -111,6 +111,29 @@ class HomeViewModel(
         }
     }
 
+    suspend fun purchaseItem(
+        userId: String,
+        locationId: String,
+        catalogItemId: String,
+        unitPrice: Double,
+        quantity: Int
+    ): Result<Unit> {
+        if (userId.isBlank()) return Result.failure(IllegalArgumentException("userId is blank"))
+        if (locationId.isBlank()) return Result.failure(IllegalArgumentException("locationId is blank"))
+        if (catalogItemId.isBlank()) return Result.failure(IllegalArgumentException("catalogItemId is blank"))
+        if (quantity <= 0) return Result.failure(IllegalArgumentException("quantity must be > 0"))
+
+        return ledgerRepository
+            .recordPurchase(
+                userId = userId,
+                unitPrice = unitPrice,
+                locationId = locationId,
+                catalogItemId = catalogItemId,
+                quantity = quantity
+            )
+            .map { Unit }
+    }
+
     fun loadForUser(userId: String, locationId: String? = null, isRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
