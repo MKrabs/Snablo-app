@@ -15,7 +15,7 @@ object PocketBaseConfig {
     val refreshUrl: String get() = "$baseUrl$collectionPrefix/users/refresh"
 
     val usersUrl: String get() = recordsUrl("users")
-    val catalogItemsUrl: String get() = recordsUrl("catalog-items")
+    val catalogItemsUrl: String get() = recordsUrl("catalog_items")
     val locationsUrl: String get() = recordsUrl("locations")
     val slotMappingsUrl: String get() = recordsUrl("slot-mappings")
     val locationPricesUrl: String get() = recordsUrl("location-prices")

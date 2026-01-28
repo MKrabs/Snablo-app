@@ -260,7 +260,10 @@ internal fun List<de.mkrabs.snablo.app.data.api.dto.ShelfDto>.toResolvedShelfSlo
         // If expanded, prefer that. Otherwise fall back to ID formatting.
         val expandedItem = s.expand?.catalogItemId
         val itemName = expandedItem?.name ?: de.mkrabs.snablo.app.util.formatItemLabel(s.catalogItemId)
-        val imageUrl = expandedItem?.imageUrl ?: expandedItem?.img
+        val imageUrl = de.mkrabs.snablo.app.data.repository.resolveCatalogItemImageUrl(
+            expandedItem?.id ?: s.catalogItemId,
+            expandedItem?.imageUrl ?: expandedItem?.img
+        )
 
         ResolvedShelfSlot(
             slotId = s.id,

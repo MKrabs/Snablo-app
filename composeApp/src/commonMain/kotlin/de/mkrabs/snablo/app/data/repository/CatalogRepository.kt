@@ -2,6 +2,7 @@ package de.mkrabs.snablo.app.data.repository
 
 import de.mkrabs.snablo.app.data.api.ApiResult
 import de.mkrabs.snablo.app.data.api.PocketBaseClient
+import de.mkrabs.snablo.app.data.api.PocketBaseConfig
 import de.mkrabs.snablo.app.domain.model.*
 
 /**
@@ -19,7 +20,7 @@ class CatalogRepositoryImpl(
         return when (val result = apiClient.getCatalogItems()) {
             is ApiResult.Success -> {
                 val items = result.data.items.map { dto ->
-                    val image = dto.imageUrl ?: dto.img
+                    val image = resolveCatalogItemImageUrl(dto.id, dto.imageUrl ?: dto.img)
                     val category = dto.category ?: dto.categoryId?.firstOrNull() ?: ""
                     CatalogItem(
                         id = dto.id,
@@ -120,4 +121,12 @@ class CatalogRepositoryImpl(
         // Nothing found
         return Result.success(emptyList())
     }
+}
+
+internal fun resolveCatalogItemImageUrl(recordId: String, raw: String?): String? {
+    if (raw.isNullOrBlank()) return null
+    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw
+    if (raw.startsWith("/")) return "${PocketBaseConfig.baseUrl}$raw"
+
+    return "${PocketBaseConfig.baseUrl}/api/files/catalog_items/$recordId/$raw"
 }
