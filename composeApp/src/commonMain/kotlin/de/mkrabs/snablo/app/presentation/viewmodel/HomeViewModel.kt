@@ -169,7 +169,7 @@ class HomeViewModel(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    balance = 0.0, // keep existing balance logic or compute elsewhere
+                    balance = _uiState.value.balance, // keep balance loaded from API
                     recentTransactions = emptyList(),
                     corners = corners,
                     slots = slots,
