@@ -275,9 +275,9 @@ fun TransactionCard(entry: LedgerEntry) {
                 )
             }
             Text(
-                "${if (entry.amountCents > 0) "+" else ""}${formatPriceEu(entry.amountEuros)}",
+                "${if (entry.balanceDeltaCents > 0) "+" else ""}${formatPriceEu(entry.balanceDeltaEuros)}",
                 style = MaterialTheme.typography.titleSmall,
-                color = if (entry.amountCents > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                color = if (entry.balanceDeltaCents > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         }
     }

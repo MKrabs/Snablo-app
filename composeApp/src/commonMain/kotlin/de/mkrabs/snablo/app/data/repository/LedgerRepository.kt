@@ -49,7 +49,7 @@ class LedgerRepositoryImpl(
             return Result.failure(IllegalArgumentException("shelfId is blank"))
         }
         val unitPriceCents = eurosToCents(unitPrice)
-        val amountCents = -unitPriceCents * quantity
+        val amountCents = unitPriceCents * quantity
         val request = CreateLedgerEntryRequest(
             entryType = LedgerEntryType.BALANCE_ENTRY.name,
             kind = TransactionKind.PURCHASE_DIGITAL.name,
@@ -97,7 +97,8 @@ class LedgerRepositoryImpl(
             amountCents = eurosToCents(amount),
             cashAffectsExpectedCash = cashAffectsExpectedCash,
             paymentMethod = paymentMethod.name,
-            locationId = locationId
+            locationId = locationId,
+            quantity = 1
         )
         return when (val result = apiClient.createLedgerEntry(request)) {
             is ApiResult.Success -> Result.success(result.data.toLedgerEntry())
@@ -114,7 +115,8 @@ class LedgerRepositoryImpl(
             amountCents = eurosToCents(amount),
             cashAffectsExpectedCash = false,
             paymentMethod = PaymentMethod.PAYPAL.name,
-            note = "Undo of entry $originalEntryId"
+            note = "Undo of entry $originalEntryId",
+            quantity = 1
         )
         return when (val result = apiClient.createLedgerEntry(request)) {
             is ApiResult.Success -> Result.success(result.data.toLedgerEntry())

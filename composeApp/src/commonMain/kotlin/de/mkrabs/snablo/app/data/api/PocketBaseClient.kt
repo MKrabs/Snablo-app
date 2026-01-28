@@ -5,7 +5,9 @@ import de.mkrabs.snablo.app.data.session.SessionManager
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -150,16 +152,24 @@ class PocketBaseClient(
     suspend fun createLedgerEntry(entry: CreateLedgerEntryRequest): ApiResult<LedgerEntryDto> {
         return try {
             val headers = getAuthHeader()
-            val response = httpClient.post(PocketBaseConfig.ledgerEntriesUrl) {
+            val response: HttpResponse = httpClient.post(PocketBaseConfig.ledgerEntriesUrl) {
                 headers.forEach { (k, v) -> header(k, v) }
                 contentType(ContentType.Application.Json)
                 setBody(entry)
-            }.body<LedgerEntryDto>()
-            ApiResult.Success(response)
+            }
+            if (response.status.isSuccess()) {
+                ApiResult.Success(response.body())
+            } else {
+                val error = runCatching { response.body<ErrorResponse>() }.getOrNull()
+                val message = error?.message ?: "Failed to create ledger entry (HTTP ${response.status.value})"
+                val details = error?.data?.entries?.joinToString { (k, v) -> "$k: $v" }
+                val fullMessage = if (!details.isNullOrBlank()) "$message - $details" else message
+                ApiResult.Error(code = response.status.value, message = fullMessage)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            ApiResult.Error(code = 500, message = "Failed to create ledger entry", exception = e)
+            ApiResult.Error(code = 500, message = "Failed to create ledger entry: ${e.message}", exception = e)
         }
     }
 

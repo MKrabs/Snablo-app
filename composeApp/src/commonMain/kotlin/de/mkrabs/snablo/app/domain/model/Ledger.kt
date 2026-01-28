@@ -73,7 +73,7 @@ data class LedgerEntry(
     val catalogItemIdSnapshot: String? = null,
     val quantity: Int? = null,
     val unitPriceCentsSnapshot: Int? = null,
-    val amountCents: Int,            // Signed cents; negative reduces balance
+    val amountCents: Int,            // Raw cents from API (may be unsigned)
     val cashAffectsExpectedCash: Boolean,
     val paymentMethod: PaymentMethod,
     val note: String? = null,
@@ -82,6 +82,19 @@ data class LedgerEntry(
 ) {
     val amountEuros: Double
         get() = amountCents / 100.0
+
+    val balanceDeltaCents: Int
+        get() {
+            if (amountCents < 0) return amountCents
+            return when (kind) {
+                TransactionKind.PURCHASE_DIGITAL -> -amountCents
+                TransactionKind.PURCHASE_CASH_LOGGED -> 0
+                else -> amountCents
+            }
+        }
+
+    val balanceDeltaEuros: Double
+        get() = balanceDeltaCents / 100.0
 }
 
 /**

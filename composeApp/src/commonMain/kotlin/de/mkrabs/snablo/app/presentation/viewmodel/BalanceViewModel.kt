@@ -36,7 +36,7 @@ class BalanceViewModel(
             try {
                 val result = ledgerRepository.getHistory(userId)
                 val entries = result.getOrThrow()
-                val balance = entries.sumOf { it.amountCents } / 100.0
+                val balance = entries.sumOf { it.balanceDeltaCents } / 100.0
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     balance = balance,
