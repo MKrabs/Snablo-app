@@ -27,7 +27,8 @@ fun BalanceHeaderCard(
     onTopUp: () -> Unit,
     onProfile: () -> Unit
 ) {
-    val balanceRowHeight = 34.dp
+    // Etwas höher, damit displaySmall nicht abgeschnitten wird
+    val balanceRowHeight = 42.dp
 
     Card(
         modifier = Modifier
