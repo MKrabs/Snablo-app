@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ import de.mkrabs.snablo.app.presentation.ui.home.PullRefreshLayout
 import de.mkrabs.snablo.app.presentation.viewmodel.HomeViewModel
 import de.mkrabs.snablo.app.presentation.viewmodel.ShelfViewModel
 import de.mkrabs.snablo.app.presentation.ui.home.TopUpDialog
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +41,7 @@ fun HomeScreen(
     onOpenProfile: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
 
     var showTopUpDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -53,8 +56,11 @@ fun HomeScreen(
         TopUpDialog(
             onDismiss = { showTopUpDialog = false },
             onConfirm = { amountEuro ->
-                viewModel.addBalance(amountEuro)
                 showTopUpDialog = false
+                scope.launch {
+                    viewModel.topUpBalance(userId = userId, amountEuro = amountEuro)
+                    viewModel.loadForUser(userId)
+                }
                 onTopUp()
             }
         )

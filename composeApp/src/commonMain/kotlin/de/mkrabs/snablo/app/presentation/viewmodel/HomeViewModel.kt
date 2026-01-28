@@ -67,14 +67,48 @@ class HomeViewModel(
     private val ledgerRepository: LedgerRepository,
     private val shelfRepository: ShelfRepository,
     private val catalogRepository: CatalogRepository,
-    private val prefs: PlatformPrefs = PlatformPrefs()
+    private val prefs: PlatformPrefs = PlatformPrefs(),
+    private val apiClient: de.mkrabs.snablo.app.data.api.PocketBaseClient
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    fun addBalance(amountEuro: Int) {
-        if (amountEuro <= 0) return
-        _uiState.value = _uiState.value.copy(balance = _uiState.value.balance + amountEuro.toDouble())
+    suspend fun refreshBalanceFromApi(userId: String) {
+        if (userId.isBlank()) return
+        when (val result = apiClient.getUserById(userId)) {
+            is de.mkrabs.snablo.app.data.api.ApiResult.Success -> {
+                val user = result.data.toUser()
+                _uiState.value = _uiState.value.copy(balance = user.globalBalance)
+            }
+            else -> {
+                // ignore balance refresh failure for now
+            }
+        }
+    }
+
+    suspend fun topUpBalance(userId: String, amountEuro: Int): Result<Unit> {
+        if (userId.isBlank()) return Result.failure(IllegalArgumentException("userId is blank"))
+        if (amountEuro <= 0) return Result.failure(IllegalArgumentException("amount must be > 0"))
+
+        // load current balance first
+        val current = when (val get = apiClient.getUserById(userId)) {
+            is de.mkrabs.snablo.app.data.api.ApiResult.Success -> get.data.toUser().globalBalance
+            is de.mkrabs.snablo.app.data.api.ApiResult.Error -> return Result.failure(Exception(get.message))
+            else -> return Result.failure(Exception("Unknown error"))
+        }
+
+        val newBalance = current + amountEuro.toDouble()
+        val newBalanceCents = (newBalance * 100).toInt()
+
+        return when (val upd = apiClient.updateUser(userId, de.mkrabs.snablo.app.data.api.dto.UpdateUserRequest(balanceCents = newBalanceCents))) {
+            is de.mkrabs.snablo.app.data.api.ApiResult.Success -> {
+                // After update, load again to sync
+                refreshBalanceFromApi(userId)
+                Result.success(Unit)
+            }
+            is de.mkrabs.snablo.app.data.api.ApiResult.Error -> Result.failure(Exception(upd.message))
+            else -> Result.failure(Exception("Unknown error"))
+        }
     }
 
     fun loadForUser(userId: String, locationId: String? = null, isRefresh: Boolean = false) {
@@ -118,6 +152,19 @@ class HomeViewModel(
 
                 // persist resolved location
                 if (!resolvedLocationId.isNullOrBlank()) prefs.putString(prefsKeyLastLocation(), resolvedLocationId)
+
+                // additionally refresh balance
+                if (userId.isNotBlank()) {
+                    when (val userRes = apiClient.getUserById(userId)) {
+                        is de.mkrabs.snablo.app.data.api.ApiResult.Success -> {
+                            val user = userRes.data.toUser()
+                            _uiState.value = _uiState.value.copy(balance = user.globalBalance)
+                        }
+                        else -> {
+                            // keep balance as-is
+                        }
+                    }
+                }
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

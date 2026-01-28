@@ -400,4 +400,21 @@ class PocketBaseClient(
             ApiResult.Error(code = 500, message = "Failed to update user: ${e.message}", exception = e)
         }
     }
+
+    suspend fun getUserById(userId: String, expand: String? = null, fields: String? = null): ApiResult<UserDto> {
+        return try {
+            val headers = getAuthHeader()
+            val response = httpClient.get("${PocketBaseConfig.usersUrl}/$userId") {
+                headers.forEach { (k, v) -> header(k, v) }
+                contentType(ContentType.Application.Json)
+                if (!expand.isNullOrBlank()) parameter("expand", expand)
+                if (!fields.isNullOrBlank()) parameter("fields", fields)
+            }.body<UserDto>()
+            ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error(code = 500, message = "Failed to fetch user: ${e.message}", exception = e)
+        }
+    }
 }
